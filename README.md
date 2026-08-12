@@ -62,7 +62,7 @@ The build system tracks **10 source segments** via SHA256 hashes. Only changed c
 
 ---
 
-## 🧰 PMDoT CLI Tool (`pmdot`)
+## PMDoT CLI Tool (`pmdot`)
 
 The project includes an all-in-one cross-platform management utility supporting **Windows**, **Linux**, and **macOS**.
 
@@ -90,11 +90,11 @@ The project includes an all-in-one cross-platform management utility supporting 
 | `pmdot --project create` | | Creates a new Godot project with scaffolding. |
 | `pmdot help` | `pmdot -h` | Shows help message. |
 
-> 📖 For complete documentation of all commands, parameters, and examples, see [`architecture-guidelines/cli_reference.md`](architecture-guidelines/cli_reference.md).
+>  For complete documentation of all commands, parameters, and examples, see [`architecture-guidelines/cli_reference.md`](architecture-guidelines/cli_reference.md).
 
 ---
 
-## 🐳 Docker Container Support
+## Docker Container Support
 
 You can build PMDoT Engine inside an isolated reproducible Linux container using Docker:
 
