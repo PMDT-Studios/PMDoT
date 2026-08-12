@@ -1,1 +1,19 @@
 .pmdot_cache/
+
+# Godot & C++ build artifacts and binaries
+*.exe
+*.lib
+*.obj
+*.o
+*.os
+*.pdb
+*.exp
+*.ilk
+*.a
+*.so
+*.dylib
+*.dll
+*.gen.h
+*.gen.cpp
+bin/
+source-godot/bin/

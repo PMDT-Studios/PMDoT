@@ -1,0 +1,21 @@
+# SCsub for pmdot_aseprite module in PMDoT Engine
+
+Import('env')
+
+env_pmdot = env.Clone()
+
+# Set up compiler optimizations and SIMD flags
+if env_pmdot.get('is_msvc', False) or env_pmdot.get('MSVC_VERSION', None):
+    env_pmdot.Append(CCFLAGS=['/O2', '/arch:AVX2'])
+else:
+    env_pmdot.Append(CCFLAGS=['-O3', '-mavx2', '-msse4.1'])
+
+# Module source files
+sources = [
+    "register_types.cpp",
+    "pmdot_pixel_pipeline.cpp",
+    "editor/aseprite_workspace.cpp",
+    "editor/pixel_art_presets.cpp",
+]
+
+env_pmdot.add_source_files(env.modules_sources, sources)

@@ -1,0 +1,17 @@
+file D:\PMDoT\source-godot\SConstruct,line 1066:
+	Configure(confdir = .sconf_temp)
+scons: Configure: Checking for C header file mntent.h... 
+scons: Configure: ".sconf_temp\conftest_d219010de4b5c77e0f8140a106ee1428_0.c" is up to date.
+scons: Configure: The original builder output was:
+  |.sconf_temp\conftest_d219010de4b5c77e0f8140a106ee1428_0.c <-
+  |  |
+  |  |#include "mntent.h"
+  |  |
+  |  |
+  |
+scons: Configure: Building ".sconf_temp\conftest_d219010de4b5c77e0f8140a106ee1428_0_419a716fe2d194f61b30714525ec72f4.windows.editor.x86_64.obj" failed in a previous run and all its sources are up to date.
+scons: Configure: The original builder output was:
+  |[34mCompiling [1m.sconf_temp\conftest_d219010de4b5c77e0f8140a106ee1428_0.c[22;23;24;29m ...[0m
+  |
+scons: Configure: (cached) no
+
