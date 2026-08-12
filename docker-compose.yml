@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  pmdot-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pmdot-builder
+    volumes:
+      - .:/pmdot
+    command: python3 pmdot.py build
