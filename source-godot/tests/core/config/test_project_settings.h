@@ -48,23 +48,37 @@ namespace TestProjectSettings {
 // TODO: Handle some cases failing on release builds. See: https://github.com/godotengine/godot/pull/88452
 #ifdef TOOLS_ENABLED
 TEST_CASE("[ProjectSettings] Get existing setting") {
+	String old_name = ProjectSettings::get_singleton()->has_setting("application/config/name") ? (String)ProjectSettings::get_singleton()->get_setting("application/config/name") : "";
+	ProjectSettings::get_singleton()->set_setting("application/config/name", "PMDoT Test Suite");
+
 	CHECK(ProjectSettings::get_singleton()->has_setting("application/config/name"));
 
 	Variant variant = ProjectSettings::get_singleton()->get_setting("application/config/name");
 	CHECK_EQ(variant.get_type(), Variant::STRING);
 
 	String name = variant;
-	CHECK_EQ(name, "GDScript Integration Test Suite");
+	CHECK_EQ(name, "PMDoT Test Suite");
+
+	if (!old_name.is_empty()) {
+		ProjectSettings::get_singleton()->set_setting("application/config/name", old_name);
+	}
 }
 
 TEST_CASE("[ProjectSettings] Default value is ignored if setting exists") {
+	String old_name = ProjectSettings::get_singleton()->has_setting("application/config/name") ? (String)ProjectSettings::get_singleton()->get_setting("application/config/name") : "";
+	ProjectSettings::get_singleton()->set_setting("application/config/name", "PMDoT Test Suite");
+
 	CHECK(ProjectSettings::get_singleton()->has_setting("application/config/name"));
 
 	Variant variant = ProjectSettings::get_singleton()->get_setting("application/config/name", "SomeDefaultValue");
 	CHECK_EQ(variant.get_type(), Variant::STRING);
 
 	String name = variant;
-	CHECK_EQ(name, "GDScript Integration Test Suite");
+	CHECK_EQ(name, "PMDoT Test Suite");
+
+	if (!old_name.is_empty()) {
+		ProjectSettings::get_singleton()->set_setting("application/config/name", old_name);
+	}
 }
 #endif // TOOLS_ENABLED
 

@@ -727,6 +727,8 @@ def cmd_build(extra_args=None):
         "target=editor",
         "disable_exceptions=no",
         "custom_modules=modules/pmdot_aseprite",
+        "module_gdscript_enabled=no",
+        "module_jsonrpc_enabled=no",
         "-j8",
     ]
     scons_cmd.extend(clean_args)

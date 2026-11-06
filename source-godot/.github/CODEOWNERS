@@ -116,8 +116,6 @@ doc_classes/*                       @godotengine/documentation
 /modules/xatlas_unwrap/             @godotengine/rendering
 
 ## Scripting
-/modules/gdscript/                  @godotengine/gdscript
-/modules/jsonrpc/                   @godotengine/gdscript
 /modules/mono/                      @godotengine/dotnet
 
 ## Text
