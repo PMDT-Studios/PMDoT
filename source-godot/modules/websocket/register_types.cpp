@@ -33,12 +33,7 @@
 #include "remote_debugger_peer_websocket.h"
 #include "websocket_multiplayer_peer.h"
 #include "websocket_peer.h"
-
-#ifdef WEB_ENABLED
-#include "emws_peer.h"
-#else
 #include "wsl_peer.h"
-#endif
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_debugger_server_websocket.h"
@@ -61,11 +56,7 @@ static void _editor_init_callback() {
 
 void initialize_websocket_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
-#ifdef WEB_ENABLED
-		EMWSPeer::initialize();
-#else
 		WSLPeer::initialize();
-#endif
 
 		GDREGISTER_CLASS(WebSocketMultiplayerPeer);
 		ClassDB::register_custom_instance_class<WebSocketPeer>();
@@ -85,7 +76,5 @@ void uninitialize_websocket_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_CORE) {
 		return;
 	}
-#ifndef WEB_ENABLED
 	WSLPeer::deinitialize();
-#endif
 }
