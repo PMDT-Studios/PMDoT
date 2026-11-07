@@ -90,6 +90,7 @@ private:
 	EditorFileDialog *fdialog_project = nullptr;
 	EditorFileDialog *fdialog_install = nullptr;
 	AcceptDialog *dialog_error = nullptr;
+	ConfirmationDialog *dialog_nonempty_warning = nullptr;
 
 	String zip_path;
 	String zip_title;
