@@ -32,6 +32,8 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
+#include "core/io/file_access.h"
+#include "core/io/resource_uid.h"
 #include "core/os/time.h"
 #include "core/version.h"
 #include "editor/editor_paths.h"
@@ -500,12 +502,44 @@ void ProjectList::_load_project_icon(int p_index) {
 	Ref<Texture2D> default_icon = get_editor_theme_icon(SNAME("DefaultProjectIcon"));
 	Ref<Texture2D> icon;
 	if (!item.icon.is_empty()) {
-		Ref<Image> img;
-		img.instantiate();
-		Error err = img->load(item.icon.replace_first("res://", item.path + "/"));
-		if (err == OK) {
-			img->resize(default_icon->get_width(), default_icon->get_height(), Image::INTERPOLATE_LANCZOS);
-			icon = ImageTexture::create_from_image(img);
+		String icon_path = item.icon;
+		if (icon_path.begins_with("uid://")) {
+			ResourceUID::ID id = ResourceUID::get_singleton()->text_to_id(icon_path);
+			icon_path = "";
+			if (id != ResourceUID::INVALID_ID) {
+				String uid_cache_path = item.path.path_join(".godot/uid_cache.bin");
+				Ref<FileAccess> f = FileAccess::open(uid_cache_path, FileAccess::READ);
+				if (f.is_valid()) {
+					uint32_t entry_count = f->get_32();
+					for (uint32_t i = 0; i < entry_count; i++) {
+						int64_t entry_id = f->get_64();
+						int32_t len = f->get_32();
+						if (entry_id == id) {
+							Vector<uint8_t> buf;
+							buf.resize(len + 1);
+							f->get_buffer(buf.ptrw(), len);
+							buf.write[len] = 0;
+							icon_path = String::utf8((const char *)buf.ptr());
+							break;
+						} else {
+							f->seek(f->get_position() + len);
+						}
+					}
+				}
+			}
+		}
+
+		if (!icon_path.is_empty() && !icon_path.begins_with("uid://")) {
+			String file_path = icon_path.replace_first("res://", item.path + "/");
+			if (FileAccess::exists(file_path)) {
+				Ref<Image> img;
+				img.instantiate();
+				Error err = img->load(file_path);
+				if (err == OK) {
+					img->resize(default_icon->get_width(), default_icon->get_height(), Image::INTERPOLATE_LANCZOS);
+					icon = ImageTexture::create_from_image(img);
+				}
+			}
 		}
 	}
 	if (icon.is_null()) {

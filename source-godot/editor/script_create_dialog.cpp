@@ -121,15 +121,20 @@ void ScriptCreateDialog::_notification(int p_what) {
 			}
 
 			String last_language = EditorSettings::get_singleton()->get_project_metadata("script_setup", "last_selected_language", "");
+			int selected_idx = -1;
 			if (!last_language.is_empty()) {
 				for (int i = 0; i < language_menu->get_item_count(); i++) {
 					if (language_menu->get_item_text(i) == last_language) {
-						language_menu->select(i);
+						selected_idx = i;
 						break;
 					}
 				}
-			} else {
-				language_menu->select(default_language);
+			}
+			if (selected_idx == -1 && default_language >= 0 && default_language < language_menu->get_item_count()) {
+				selected_idx = default_language;
+			}
+			if (selected_idx >= 0 && selected_idx < language_menu->get_item_count()) {
+				language_menu->select(selected_idx);
 			}
 			if (EditorSettings::get_singleton()->has_meta("script_setup_use_script_templates")) {
 				is_using_templates = bool(EditorSettings::get_singleton()->get_meta("script_setup_use_script_templates"));
@@ -166,7 +171,7 @@ bool ScriptCreateDialog::_can_be_built_in() {
 }
 
 String ScriptCreateDialog::_adjust_file_path(const String &p_base_path) const {
-	if (p_base_path.is_empty()) {
+	if (p_base_path.is_empty() || language == nullptr) {
 		return p_base_path;
 	}
 
@@ -255,7 +260,17 @@ String ScriptCreateDialog::_validate_path(const String &p_path, bool p_file_must
 
 	// Get all possible extensions for script.
 	for (int l = 0; l < language_menu->get_item_count(); l++) {
-		ScriptServer::get_language(l)->get_recognized_extensions(&extensions);
+		if (l < ScriptServer::get_language_count()) {
+			ScriptLanguage *l_ptr = ScriptServer::get_language(l);
+			if (l_ptr) {
+				l_ptr->get_recognized_extensions(&extensions);
+			}
+		}
+	}
+
+	int selected_lang = language_menu->get_selected();
+	if (selected_lang < 0 || selected_lang >= ScriptServer::get_language_count() || language == nullptr) {
+		return TTR("No script language selected or available.");
 	}
 
 	bool found = false;
@@ -263,7 +278,7 @@ String ScriptCreateDialog::_validate_path(const String &p_path, bool p_file_must
 	for (const String &E : extensions) {
 		if (E.nocasecmp_to(extension) == 0) {
 			found = true;
-			if (E == ScriptServer::get_language(language_menu->get_selected())->get_extension()) {
+			if (E == language->get_extension()) {
 				match = true;
 			}
 			break;
@@ -278,7 +293,7 @@ String ScriptCreateDialog::_validate_path(const String &p_path, bool p_file_must
 	}
 
 	// Let ScriptLanguage do custom validation.
-	return ScriptServer::get_language(language_menu->get_selected())->validate_path(p);
+	return language->validate_path(p);
 }
 
 void ScriptCreateDialog::_parent_name_changed(const String &p_parent) {
@@ -335,6 +350,10 @@ void ScriptCreateDialog::ok_pressed() {
 }
 
 void ScriptCreateDialog::_create_new() {
+	if (language == nullptr) {
+		return;
+	}
+
 	Ref<Script> scr;
 
 	const ScriptLanguage::ScriptTemplate sinfo = _get_current_template();
@@ -348,7 +367,7 @@ void ScriptCreateDialog::_create_new() {
 	}
 
 	String class_name = file_path->get_text().get_file().get_basename();
-	scr = ScriptServer::get_language(language_menu->get_selected())->make_template(sinfo.content, class_name, parent_class);
+	scr = language->make_template(sinfo.content, class_name, parent_class);
 
 	if (is_built_in) {
 		scr->set_name(built_in_name->get_text());
@@ -383,7 +402,23 @@ void ScriptCreateDialog::_load_exist() {
 }
 
 void ScriptCreateDialog::_language_changed(int l) {
+	if (l < 0 || l >= ScriptServer::get_language_count() || ScriptServer::get_language_count() == 0) {
+		language = nullptr;
+		can_inherit_from_file = false;
+		supports_built_in = false;
+		is_built_in = false;
+		validation_panel->update();
+		return;
+	}
+
 	language = ScriptServer::get_language(l);
+	if (!language) {
+		can_inherit_from_file = false;
+		supports_built_in = false;
+		is_built_in = false;
+		validation_panel->update();
+		return;
+	}
 
 	can_inherit_from_file = language->can_inherit_from_file();
 	supports_built_in = language->supports_builtin_mode();
@@ -396,7 +431,9 @@ void ScriptCreateDialog::_language_changed(int l) {
 	_path_changed(path);
 	file_path->set_text(path);
 
-	EditorSettings::get_singleton()->set_project_metadata("script_setup", "last_selected_language", language_menu->get_item_text(language_menu->get_selected()));
+	if (language_menu->get_selected() >= 0 && language_menu->get_selected() < language_menu->get_item_count()) {
+		EditorSettings::get_singleton()->set_project_metadata("script_setup", "last_selected_language", language_menu->get_item_text(language_menu->get_selected()));
+	}
 
 	_parent_name_changed(parent_name->get_text());
 	validation_panel->update();
@@ -435,8 +472,9 @@ void ScriptCreateDialog::_browse_path(bool browse_parent, bool p_save) {
 	file_browse->clear_filters();
 	List<String> extensions;
 
-	int lang = language_menu->get_selected();
-	ScriptServer::get_language(lang)->get_recognized_extensions(&extensions);
+	if (language) {
+		language->get_recognized_extensions(&extensions);
+	}
 
 	for (const String &E : extensions) {
 		file_browse->add_filter("*." + E);
@@ -501,6 +539,12 @@ void ScriptCreateDialog::_path_changed(const String &p_path) {
 }
 
 void ScriptCreateDialog::_update_template_menu() {
+	if (language == nullptr) {
+		template_menu->set_disabled(true);
+		template_menu->clear();
+		template_list.clear();
+		return;
+	}
 	bool is_language_using_templates = language->is_using_templates();
 	template_menu->set_disabled(false);
 	template_menu->clear();
@@ -863,11 +907,11 @@ ScriptCreateDialog::ScriptCreateDialog() {
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
 		String lang = ScriptServer::get_language(i)->get_name();
 		language_menu->add_item(lang);
-		if (lang == "GDScript") {
+		if (lang == "GDScript" || default_language == -1) {
 			default_language = i;
 		}
 	}
-	if (default_language >= 0) {
+	if (default_language >= 0 && language_menu->get_item_count() > 0) {
 		language_menu->select(default_language);
 	}
 
