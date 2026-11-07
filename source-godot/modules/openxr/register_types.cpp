@@ -65,10 +65,6 @@
 #include "editor/openxr_editor_plugin.h"
 #endif
 
-#ifdef ANDROID_ENABLED
-#include "extensions/platform/openxr_android_extension.h"
-#endif
-
 #include "core/config/project_settings.h"
 #include "main/main.h"
 
@@ -107,9 +103,6 @@ void initialize_openxr_module(ModuleInitializationLevel p_level) {
 		if (OpenXRAPI::openxr_is_enabled(false)) {
 			// Always register our extension wrappers even if we don't initialize OpenXR.
 			// Some of these wrappers will add functionality to our editor.
-#ifdef ANDROID_ENABLED
-			OpenXRAPI::register_extension_wrapper(memnew(OpenXRAndroidExtension));
-#endif
 
 			// register our other extensions
 			OpenXRAPI::register_extension_wrapper(memnew(OpenXRPalmPoseExtension));

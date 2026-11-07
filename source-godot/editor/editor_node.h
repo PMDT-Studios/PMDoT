@@ -179,8 +179,6 @@ private:
 		FILE_SHOW_IN_FILESYSTEM,
 		FILE_EXPORT_PROJECT,
 		FILE_EXPORT_MESH_LIBRARY,
-		FILE_INSTALL_ANDROID_SOURCE,
-		FILE_EXPLORE_ANDROID_BUILD_TEMPLATES,
 		FILE_SAVE_OPTIMIZED,
 		FILE_OPEN_RECENT,
 		FILE_OPEN_OLD_SCENE,
@@ -225,7 +223,6 @@ private:
 		SETTINGS_MANAGE_EXPORT_TEMPLATES,
 		SETTINGS_MANAGE_FBX_IMPORTER,
 		SETTINGS_MANAGE_FEATURE_PROFILES,
-		SETTINGS_INSTALL_ANDROID_BUILD_TEMPLATE,
 		SETTINGS_PICK_MAIN_SCENE,
 		SETTINGS_TOGGLE_FULLSCREEN,
 		SETTINGS_HELP,
@@ -264,7 +261,6 @@ private:
 		String path;
 		bool debug = false;
 		bool pack_only = false;
-		bool android_build_template = false;
 	} export_defer;
 
 	static EditorNode *singleton;
@@ -395,13 +391,6 @@ private:
 	PopupMenu *editor_layouts = nullptr;
 	EditorLayoutsDialog *layout_dialog = nullptr;
 
-	ConfirmationDialog *gradle_build_manage_templates = nullptr;
-	ConfirmationDialog *install_android_build_template = nullptr;
-	ConfirmationDialog *remove_android_build_template = nullptr;
-	Label *install_android_build_template_message = nullptr;
-	OptionButton *choose_android_export_profile = nullptr;
-	Ref<EditorExportPreset> android_export_preset;
-
 	PopupMenu *vcs_actions_menu = nullptr;
 	EditorFileDialog *file = nullptr;
 	ExportTemplateManager *export_template_manager = nullptr;
@@ -410,7 +399,6 @@ private:
 	EditorFileDialog *file_templates = nullptr;
 	EditorFileDialog *file_export_lib = nullptr;
 	EditorFileDialog *file_script = nullptr;
-	EditorFileDialog *file_android_build_source = nullptr;
 	String current_path;
 	MenuButton *update_spinner = nullptr;
 
@@ -536,9 +524,6 @@ private:
 	void _menu_option(int p_option);
 	void _menu_confirm_current();
 	void _menu_option_confirm(int p_option, bool p_confirmed);
-
-	void _android_build_source_selected(const String &p_file);
-	void _android_export_preset_selected(int p_index);
 
 	void _request_screenshot();
 	void _screenshot(bool p_use_utc = false);
@@ -885,7 +870,7 @@ public:
 
 	void _copy_warning(const String &p_str);
 
-	Error export_preset(const String &p_preset, const String &p_path, bool p_debug, bool p_pack_only, bool p_android_build_template);
+	Error export_preset(const String &p_preset, const String &p_path, bool p_debug, bool p_pack_only);
 	bool is_project_exporting() const;
 
 	Control *get_gui_base() { return gui_base; }
