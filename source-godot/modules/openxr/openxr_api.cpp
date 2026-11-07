@@ -60,10 +60,6 @@
 #include "extensions/openxr_fb_update_swapchain_extension.h"
 #include "extensions/openxr_hand_tracking_extension.h"
 
-#ifdef ANDROID_ENABLED
-#define OPENXR_LOADER_NAME "libopenxr_loader.so"
-#endif
-
 ////////////////////////////////////
 // OpenXRAPI::OpenXRSwapChainInfo
 
@@ -1494,20 +1490,6 @@ bool OpenXRAPI::is_running() {
 }
 
 bool OpenXRAPI::openxr_loader_init() {
-#ifdef ANDROID_ENABLED
-	ERR_FAIL_COND_V_MSG(openxr_loader_library_handle != nullptr, false, "OpenXR Loader library is already loaded.");
-
-	{
-		Error error_code = OS::get_singleton()->open_dynamic_library(OPENXR_LOADER_NAME, openxr_loader_library_handle);
-		ERR_FAIL_COND_V_MSG(error_code != OK, false, "OpenXR loader not found.");
-	}
-
-	{
-		Error error_code = OS::get_singleton()->get_dynamic_library_symbol_handle(openxr_loader_library_handle, "xrGetInstanceProcAddr", (void *&)xrGetInstanceProcAddr);
-		ERR_FAIL_COND_V_MSG(error_code != OK, false, "Symbol xrGetInstanceProcAddr not found in OpenXR Loader library.");
-	}
-#endif
-
 	// Resolve the symbols that don't require an instance
 	OPENXR_API_INIT_XR_FUNC_V(xrCreateInstance);
 	OPENXR_API_INIT_XR_FUNC_V(xrEnumerateApiLayerProperties);
@@ -2603,13 +2585,6 @@ OpenXRAPI::~OpenXRAPI() {
 		memfree(layer_properties);
 		layer_properties = nullptr;
 	}
-
-#ifdef ANDROID_ENABLED
-	if (openxr_loader_library_handle) {
-		OS::get_singleton()->close_dynamic_library(openxr_loader_library_handle);
-		openxr_loader_library_handle = nullptr;
-	}
-#endif
 
 	singleton = nullptr;
 }

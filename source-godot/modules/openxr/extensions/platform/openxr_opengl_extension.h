@@ -65,8 +65,6 @@ private:
 
 #ifdef WIN32
 	static XrGraphicsBindingOpenGLWin32KHR graphics_binding_gl;
-#elif defined(ANDROID_ENABLED)
-	static XrGraphicsBindingOpenGLESAndroidKHR graphics_binding_gl;
 #else // Linux/X11
 	static XrGraphicsBindingOpenGLXlibKHR graphics_binding_gl;
 #endif
@@ -81,11 +79,7 @@ private:
 
 	bool check_graphics_api_support(XrVersion p_desired_version);
 
-#ifdef ANDROID_ENABLED
-	EXT_PROTO_XRRESULT_FUNC3(xrGetOpenGLESGraphicsRequirementsKHR, (XrInstance), p_instance, (XrSystemId), p_system_id, (XrGraphicsRequirementsOpenGLESKHR *), p_graphics_requirements)
-#else
 	EXT_PROTO_XRRESULT_FUNC3(xrGetOpenGLGraphicsRequirementsKHR, (XrInstance), p_instance, (XrSystemId), p_system_id, (XrGraphicsRequirementsOpenGLKHR *), p_graphics_requirements)
-#endif
 	EXT_PROTO_XRRESULT_FUNC4(xrEnumerateSwapchainImages, (XrSwapchain), p_swapchain, (uint32_t), p_image_capacity_input, (uint32_t *), p_image_count_output, (XrSwapchainImageBaseHeader *), p_images)
 };
 

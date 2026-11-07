@@ -531,20 +531,13 @@ String ShaderGLES3::_version_get_sha1(Version *p_version) const {
 	return hash_build.as_string().sha1_text();
 }
 
-#ifndef WEB_ENABLED // not supported in webgl
 static const char *shader_file_header = "GLSC";
 static const uint32_t cache_file_version = 3;
-#endif
 
 bool ShaderGLES3::_load_from_cache(Version *p_version) {
-#ifdef WEB_ENABLED // not supported in webgl
-	return false;
-#else
-#if !defined(ANDROID_ENABLED) && !defined(IOS_ENABLED)
 	if (RasterizerGLES3::is_gles_over_gl() && (glProgramBinary == nullptr)) { // ARB_get_program_binary extension not available.
 		return false;
 	}
-#endif
 	String sha1 = _version_get_sha1(p_version);
 	String path = shader_cache_dir.path_join(name).path_join(base_sha256).path_join(sha1) + ".cache";
 
@@ -619,19 +612,13 @@ bool ShaderGLES3::_load_from_cache(Version *p_version) {
 	p_version->variants = variants;
 
 	return true;
-#endif // WEB_ENABLED
 }
 
 void ShaderGLES3::_save_to_cache(Version *p_version) {
-#ifdef WEB_ENABLED // not supported in webgl
-	return;
-#else
 	ERR_FAIL_COND(!shader_cache_dir_valid);
-#if !defined(ANDROID_ENABLED) && !defined(IOS_ENABLED)
 	if (RasterizerGLES3::is_gles_over_gl() && (glGetProgramBinary == nullptr)) { // ARB_get_program_binary extension not available.
 		return;
 	}
-#endif
 	String sha1 = _version_get_sha1(p_version);
 	String path = shader_cache_dir.path_join(name).path_join(base_sha256).path_join(sha1) + ".cache";
 
@@ -674,7 +661,6 @@ void ShaderGLES3::_save_to_cache(Version *p_version) {
 			f->store_buffer(compiled_program.ptr(), compiled_program.size());
 		}
 	}
-#endif // WEB_ENABLED
 }
 
 void ShaderGLES3::_clear_version(Version *p_version) {

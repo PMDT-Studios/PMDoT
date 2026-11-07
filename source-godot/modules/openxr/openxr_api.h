@@ -185,16 +185,7 @@ private:
 	bool openxr_loader_init();
 	bool resolve_instance_openxr_symbols();
 
-#ifdef ANDROID_ENABLED
-	// On Android we keep tracker of our external OpenXR loader
-	void *openxr_loader_library_handle = nullptr;
-#endif
-
 	// function pointers
-#ifdef ANDROID_ENABLED
-	// On non-Android platforms we use the OpenXR symbol linked into the engine binary.
-	PFN_xrGetInstanceProcAddr xrGetInstanceProcAddr = nullptr;
-#endif
 	EXT_PROTO_XRRESULT_FUNC3(xrAcquireSwapchainImage, (XrSwapchain), swapchain, (const XrSwapchainImageAcquireInfo *), acquireInfo, (uint32_t *), index)
 	EXT_PROTO_XRRESULT_FUNC3(xrApplyHapticFeedback, (XrSession), session, (const XrHapticActionInfo *), hapticActionInfo, (const XrHapticBaseHeader *), hapticFeedback)
 	EXT_PROTO_XRRESULT_FUNC2(xrAttachSessionActionSets, (XrSession), session, (const XrSessionActionSetsAttachInfo *), attachInfo)

@@ -64,11 +64,7 @@
 HashMap<String, bool *> OpenXROpenGLExtension::get_requested_extensions() {
 	HashMap<String, bool *> request_extensions;
 
-#ifdef ANDROID_ENABLED
-	request_extensions[XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME] = nullptr;
-#else
-	request_extensions[XR_KHR_OPENGL_ENABLE_EXTENSION_NAME] = nullptr;
-#endif
+request_extensions[XR_KHR_OPENGL_ENABLE_EXTENSION_NAME] = nullptr;
 
 	return request_extensions;
 }
@@ -77,11 +73,7 @@ void OpenXROpenGLExtension::on_instance_created(const XrInstance p_instance) {
 	// Obtain pointers to functions we're accessing here.
 	ERR_FAIL_NULL(OpenXRAPI::get_singleton());
 
-#ifdef ANDROID_ENABLED
-	EXT_INIT_XR_FUNC(xrGetOpenGLESGraphicsRequirementsKHR);
-#else
-	EXT_INIT_XR_FUNC(xrGetOpenGLGraphicsRequirementsKHR);
-#endif
+EXT_INIT_XR_FUNC(xrGetOpenGLGraphicsRequirementsKHR);
 	EXT_INIT_XR_FUNC(xrEnumerateSwapchainImages);
 }
 
@@ -91,17 +83,7 @@ bool OpenXROpenGLExtension::check_graphics_api_support(XrVersion p_desired_versi
 	XrSystemId system_id = OpenXRAPI::get_singleton()->get_system_id();
 	XrInstance instance = OpenXRAPI::get_singleton()->get_instance();
 
-#ifdef ANDROID_ENABLED
-	XrGraphicsRequirementsOpenGLESKHR opengl_requirements;
-	opengl_requirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_ES_KHR;
-	opengl_requirements.next = nullptr;
-
-	XrResult result = xrGetOpenGLESGraphicsRequirementsKHR(instance, system_id, &opengl_requirements);
-	if (!OpenXRAPI::get_singleton()->xr_result(result, "Failed to get OpenGL graphics requirements!")) {
-		return false;
-	}
-#else
-	XrGraphicsRequirementsOpenGLKHR opengl_requirements;
+XrGraphicsRequirementsOpenGLKHR opengl_requirements;
 	opengl_requirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
 	opengl_requirements.next = nullptr;
 
@@ -109,7 +91,6 @@ bool OpenXROpenGLExtension::check_graphics_api_support(XrVersion p_desired_versi
 	if (!OpenXRAPI::get_singleton()->xr_result(result, "Failed to get OpenGL graphics requirements!")) {
 		return false;
 	}
-#endif
 
 	if (p_desired_version < opengl_requirements.minApiVersionSupported) {
 		print_line("OpenXR: Requested OpenGL version does not meet the minimum version this runtime supports.");
@@ -131,8 +112,7 @@ bool OpenXROpenGLExtension::check_graphics_api_support(XrVersion p_desired_versi
 
 #ifdef WIN32
 XrGraphicsBindingOpenGLWin32KHR OpenXROpenGLExtension::graphics_binding_gl;
-#elif defined(ANDROID_ENABLED)
-XrGraphicsBindingOpenGLESAndroidKHR OpenXROpenGLExtension::graphics_binding_gl;
+
 #elif defined(X11_ENABLED)
 XrGraphicsBindingOpenGLXlibKHR OpenXROpenGLExtension::graphics_binding_gl;
 #endif
@@ -157,13 +137,7 @@ void *OpenXROpenGLExtension::set_session_create_and_get_next_pointer(void *p_nex
 
 	graphics_binding_gl.hDC = (HDC)display_server->window_get_native_handle(DisplayServer::WINDOW_VIEW);
 	graphics_binding_gl.hGLRC = (HGLRC)display_server->window_get_native_handle(DisplayServer::OPENGL_CONTEXT);
-#elif defined(ANDROID_ENABLED)
-	graphics_binding_gl.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR;
-	graphics_binding_gl.next = p_next_pointer;
 
-	graphics_binding_gl.display = (void *)display_server->window_get_native_handle(DisplayServer::DISPLAY_HANDLE);
-	graphics_binding_gl.config = (EGLConfig)0; // https://github.com/KhronosGroup/OpenXR-SDK-Source/blob/master/src/tests/hello_xr/graphicsplugin_opengles.cpp#L122
-	graphics_binding_gl.context = (void *)display_server->window_get_native_handle(DisplayServer::OPENGL_CONTEXT);
 #elif defined(X11_ENABLED)
 	graphics_binding_gl.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR;
 	graphics_binding_gl.next = p_next_pointer;
@@ -224,19 +198,11 @@ bool OpenXROpenGLExtension::get_swapchain_image_data(XrSwapchain p_swapchain, in
 		return false;
 	}
 
-#ifdef ANDROID_ENABLED
-	XrSwapchainImageOpenGLESKHR *images = (XrSwapchainImageOpenGLESKHR *)memalloc(sizeof(XrSwapchainImageOpenGLESKHR) * swapchain_length);
-#else
-	XrSwapchainImageOpenGLKHR *images = (XrSwapchainImageOpenGLKHR *)memalloc(sizeof(XrSwapchainImageOpenGLKHR) * swapchain_length);
-#endif
+XrSwapchainImageOpenGLKHR *images = (XrSwapchainImageOpenGLKHR *)memalloc(sizeof(XrSwapchainImageOpenGLKHR) * swapchain_length);
 	ERR_FAIL_NULL_V_MSG(images, false, "OpenXR Couldn't allocate memory for swap chain image");
 
 	for (uint64_t i = 0; i < swapchain_length; i++) {
-#ifdef ANDROID_ENABLED
-		images[i].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
-#else
-		images[i].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
-#endif
+images[i].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
 		images[i].next = nullptr;
 		images[i].image = 0;
 	}
@@ -329,79 +295,7 @@ void OpenXROpenGLExtension::cleanup_swapchain_graphics_data(void **p_swapchain_g
 String OpenXROpenGLExtension::get_swapchain_format_name(int64_t p_swapchain_format) const {
 	// These are somewhat different per platform, will need to weed some stuff out...
 	switch (p_swapchain_format) {
-#ifdef ANDROID_ENABLED
-		// using definitions from GLES3/gl3.h
-
-		ENUM_TO_STRING_CASE(GL_RGBA4)
-		ENUM_TO_STRING_CASE(GL_RGB5_A1)
-		ENUM_TO_STRING_CASE(GL_RGB565)
-		ENUM_TO_STRING_CASE(GL_RGB8)
-		ENUM_TO_STRING_CASE(GL_RGBA8)
-		ENUM_TO_STRING_CASE(GL_RGB10_A2)
-		ENUM_TO_STRING_CASE(GL_RGBA32F)
-		ENUM_TO_STRING_CASE(GL_RGB32F)
-		ENUM_TO_STRING_CASE(GL_RGBA16F)
-		ENUM_TO_STRING_CASE(GL_RGB16F)
-		ENUM_TO_STRING_CASE(GL_R11F_G11F_B10F)
-		ENUM_TO_STRING_CASE(GL_UNSIGNED_INT_10F_11F_11F_REV)
-		ENUM_TO_STRING_CASE(GL_RGB9_E5)
-		ENUM_TO_STRING_CASE(GL_UNSIGNED_INT_5_9_9_9_REV)
-		ENUM_TO_STRING_CASE(GL_RGBA32UI)
-		ENUM_TO_STRING_CASE(GL_RGB32UI)
-		ENUM_TO_STRING_CASE(GL_RGBA16UI)
-		ENUM_TO_STRING_CASE(GL_RGB16UI)
-		ENUM_TO_STRING_CASE(GL_RGBA8UI)
-		ENUM_TO_STRING_CASE(GL_RGB8UI)
-		ENUM_TO_STRING_CASE(GL_RGBA32I)
-		ENUM_TO_STRING_CASE(GL_RGB32I)
-		ENUM_TO_STRING_CASE(GL_RGBA16I)
-		ENUM_TO_STRING_CASE(GL_RGB16I)
-		ENUM_TO_STRING_CASE(GL_RGBA8I)
-		ENUM_TO_STRING_CASE(GL_RGB8I)
-		ENUM_TO_STRING_CASE(GL_RG)
-		ENUM_TO_STRING_CASE(GL_RG_INTEGER)
-		ENUM_TO_STRING_CASE(GL_R8)
-		ENUM_TO_STRING_CASE(GL_RG8)
-		ENUM_TO_STRING_CASE(GL_R16F)
-		ENUM_TO_STRING_CASE(GL_R32F)
-		ENUM_TO_STRING_CASE(GL_RG16F)
-		ENUM_TO_STRING_CASE(GL_RG32F)
-		ENUM_TO_STRING_CASE(GL_R8I)
-		ENUM_TO_STRING_CASE(GL_R8UI)
-		ENUM_TO_STRING_CASE(GL_R16I)
-		ENUM_TO_STRING_CASE(GL_R16UI)
-		ENUM_TO_STRING_CASE(GL_R32I)
-		ENUM_TO_STRING_CASE(GL_R32UI)
-		ENUM_TO_STRING_CASE(GL_RG8I)
-		ENUM_TO_STRING_CASE(GL_RG8UI)
-		ENUM_TO_STRING_CASE(GL_RG16I)
-		ENUM_TO_STRING_CASE(GL_RG16UI)
-		ENUM_TO_STRING_CASE(GL_RG32I)
-		ENUM_TO_STRING_CASE(GL_RG32UI)
-		ENUM_TO_STRING_CASE(GL_R8_SNORM)
-		ENUM_TO_STRING_CASE(GL_RG8_SNORM)
-		ENUM_TO_STRING_CASE(GL_RGB8_SNORM)
-		ENUM_TO_STRING_CASE(GL_RGBA8_SNORM)
-		ENUM_TO_STRING_CASE(GL_RGB10_A2UI)
-		ENUM_TO_STRING_CASE(GL_SRGB)
-		ENUM_TO_STRING_CASE(GL_SRGB8)
-		ENUM_TO_STRING_CASE(GL_SRGB8_ALPHA8)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_R11_EAC)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_SIGNED_R11_EAC)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_RG11_EAC)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_SIGNED_RG11_EAC)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_RGB8_ETC2)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_SRGB8_ETC2)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_RGBA8_ETC2_EAC)
-		ENUM_TO_STRING_CASE(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC)
-		ENUM_TO_STRING_CASE(GL_DEPTH_COMPONENT16)
-		ENUM_TO_STRING_CASE(GL_DEPTH_COMPONENT24)
-		ENUM_TO_STRING_CASE(GL_DEPTH24_STENCIL8)
-
-#else
-		// using definitions from GLAD
+// using definitions from GLAD
 		ENUM_TO_STRING_CASE(GL_R8_SNORM)
 		ENUM_TO_STRING_CASE(GL_RG8_SNORM)
 		ENUM_TO_STRING_CASE(GL_RGB8_SNORM)

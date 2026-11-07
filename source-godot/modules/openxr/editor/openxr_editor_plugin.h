@@ -40,9 +40,7 @@ class OpenXREditorPlugin : public EditorPlugin {
 	GDCLASS(OpenXREditorPlugin, EditorPlugin);
 
 	OpenXRActionMapEditor *action_map_editor = nullptr;
-#ifndef ANDROID_ENABLED
 	OpenXRSelectRuntime *select_runtime = nullptr;
-#endif
 
 public:
 	virtual String get_name() const override { return "OpenXRPlugin"; }

@@ -43,13 +43,12 @@ def make_default_controller_mappings(target, source, env):
             "Linux": "#ifdef LINUXBSD_ENABLED",
             "Windows": "#ifdef WINDOWS_ENABLED",
             "Mac OS X": "#ifdef MACOS_ENABLED",
-            "Android": "#ifdef ANDROID_ENABLED",
-            "iOS": "#ifdef IOS_ENABLED",
-            "Web": "#ifdef WEB_ENABLED",
         }
 
         g.write("const char* DefaultControllerMappings::mappings[] = {\n")
         for platform, mappings in platform_mappings.items():
+            if platform not in platform_variables:
+                continue
             variable = platform_variables[platform]
             g.write("{}\n".format(variable))
             for mapping in mappings.values():

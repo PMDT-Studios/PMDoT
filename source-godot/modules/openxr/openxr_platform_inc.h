@@ -40,15 +40,7 @@
 #endif // VULKAN_ENABLED
 
 #if defined(GLES3_ENABLED) && !defined(MACOS_ENABLED)
-#ifdef ANDROID_ENABLED
-#define XR_USE_GRAPHICS_API_OPENGL_ES
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GLES3/gl3.h>
-#include <GLES3/gl3ext.h>
-#else
 #define XR_USE_GRAPHICS_API_OPENGL
-#endif // ANDROID_ENABLED
 #ifdef X11_ENABLED
 #define GL_GLEXT_PROTOTYPES 1
 #define GL3_PROTOTYPES 1
@@ -66,11 +58,6 @@
 // however due to the way the openxr headers are put together, we have no choice.
 #include <windows.h>
 #endif // WINDOWS_ENABLED
-
-#ifdef ANDROID_ENABLED
-// The jobject type from jni.h is used by openxr_platform.h on Android.
-#include <jni.h>
-#endif // ANDROID_ENABLED
 
 // Include platform dependent structs.
 #include <openxr/openxr_platform.h>
