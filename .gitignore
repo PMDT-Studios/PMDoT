@@ -1,4 +1,6 @@
 .pmdot_cache/
+__pycache__/
+*.pyc
 
 # Godot & C++ build artifacts and binaries
 *.exe
