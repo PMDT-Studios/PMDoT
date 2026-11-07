@@ -1263,7 +1263,7 @@ Error EditorNode::load_resource(const String &p_resource, bool p_ignore_broken_d
 	Ref<Resource> res;
 	if (ResourceLoader::exists(p_resource, "")) {
 		res = ResourceLoader::load(p_resource, "", ResourceFormatLoader::CACHE_MODE_REUSE, &err);
-	} else if (textfile_extensions.has(p_resource.get_extension())) {
+	} else if (textfile_extensions.has(p_resource.get_extension()) || p_resource.get_extension() == "cs" || p_resource.get_extension() == "cpp" || p_resource.get_extension() == "h" || p_resource.get_extension() == "hpp" || p_resource.get_extension() == "java") {
 		res = ScriptEditor::get_singleton()->open_file(p_resource);
 	}
 	ERR_FAIL_COND_V(!res.is_valid(), ERR_CANT_OPEN);
