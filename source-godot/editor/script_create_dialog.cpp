@@ -171,14 +171,36 @@ bool ScriptCreateDialog::_can_be_built_in() {
 }
 
 String ScriptCreateDialog::_adjust_file_path(const String &p_base_path) const {
-	if (p_base_path.is_empty() || language == nullptr) {
+	if (p_base_path.is_empty()) {
 		return p_base_path;
 	}
 
 	String base_dir = p_base_path.get_base_dir();
 	String file_name = p_base_path.get_file().get_basename();
-	file_name = EditorNode::adjust_script_name_casing(file_name, language->preferred_file_name_casing());
-	String extension = language->get_extension();
+	String extension;
+
+	if (language != nullptr) {
+		file_name = EditorNode::adjust_script_name_casing(file_name, language->preferred_file_name_casing());
+		extension = language->get_extension();
+	} else {
+		String lang_name = (language_menu && language_menu->get_selected() >= 0) ? language_menu->get_item_text(language_menu->get_selected()) : "C#";
+		if (lang_name == "C#") {
+			file_name = EditorNode::adjust_script_name_casing(file_name, ScriptLanguage::SCRIPT_NAME_CASING_PASCAL_CASE);
+			extension = "cs";
+		} else if (lang_name == "C++") {
+			file_name = EditorNode::adjust_script_name_casing(file_name, ScriptLanguage::SCRIPT_NAME_CASING_SNAKE_CASE);
+			extension = "cpp";
+		} else if (lang_name == "Java") {
+			file_name = EditorNode::adjust_script_name_casing(file_name, ScriptLanguage::SCRIPT_NAME_CASING_PASCAL_CASE);
+			extension = "java";
+		} else if (lang_name == "Markdown") {
+			file_name = EditorNode::adjust_script_name_casing(file_name, ScriptLanguage::SCRIPT_NAME_CASING_SNAKE_CASE);
+			extension = "md";
+		} else {
+			extension = "cs";
+		}
+	}
+
 	return base_dir.path_join(file_name + "." + extension);
 }
 
@@ -193,7 +215,14 @@ void ScriptCreateDialog::config(const String &p_base_name, const String &p_base_
 	built_in_enabled = p_built_in_enabled;
 	load_enabled = p_load_enabled;
 
-	_language_changed(language_menu->get_selected());
+	if (language_menu->get_item_count() > 0) {
+		int sel = language_menu->get_selected();
+		if (sel < 0) {
+			sel = 0;
+			language_menu->select(0);
+		}
+		_language_changed(sel);
+	}
 }
 
 void ScriptCreateDialog::set_inheritance_base_type(const String &p_base) {
@@ -258,42 +287,40 @@ String ScriptCreateDialog::_validate_path(const String &p_path, bool p_file_must
 	String extension = p.get_extension();
 	List<String> extensions;
 
-	// Get all possible extensions for script.
-	for (int l = 0; l < language_menu->get_item_count(); l++) {
-		if (l < ScriptServer::get_language_count()) {
-			ScriptLanguage *l_ptr = ScriptServer::get_language(l);
-			if (l_ptr) {
-				l_ptr->get_recognized_extensions(&extensions);
-			}
+	if (language) {
+		language->get_recognized_extensions(&extensions);
+	} else {
+		String lang_name = (language_menu && language_menu->get_selected() >= 0) ? language_menu->get_item_text(language_menu->get_selected()) : "";
+		if (lang_name == "C#") {
+			extensions.push_back("cs");
+		} else if (lang_name == "C++") {
+			extensions.push_back("cpp");
+			extensions.push_back("h");
+			extensions.push_back("hpp");
+		} else if (lang_name == "Java") {
+			extensions.push_back("java");
+		} else if (lang_name == "Markdown") {
+			extensions.push_back("md");
 		}
 	}
 
-	int selected_lang = language_menu->get_selected();
-	if (selected_lang < 0 || selected_lang >= ScriptServer::get_language_count() || language == nullptr) {
-		return TTR("No script language selected or available.");
-	}
-
 	bool found = false;
-	bool match = false;
 	for (const String &E : extensions) {
 		if (E.nocasecmp_to(extension) == 0) {
 			found = true;
-			if (E == language->get_extension()) {
-				match = true;
-			}
 			break;
 		}
 	}
 
 	if (!found) {
-		return TTR("Invalid extension.");
-	}
-	if (!match) {
-		return TTR("Extension doesn't match chosen language.");
+		return TTR("Invalid extension for selected language.");
 	}
 
-	// Let ScriptLanguage do custom validation.
-	return language->validate_path(p);
+	if (language) {
+		return language->validate_path(p);
+	}
+
+	return "";
 }
 
 void ScriptCreateDialog::_parent_name_changed(const String &p_parent) {
@@ -350,41 +377,65 @@ void ScriptCreateDialog::ok_pressed() {
 }
 
 void ScriptCreateDialog::_create_new() {
-	if (language == nullptr) {
-		return;
-	}
-
-	Ref<Script> scr;
-
-	const ScriptLanguage::ScriptTemplate sinfo = _get_current_template();
-
+	String cname = file_path->get_text().get_file().get_basename();
 	String parent_class = parent_name->get_text();
-	if (!parent_name->get_text().is_quoted() && !ClassDB::class_exists(parent_class) && !ScriptServer::is_global_class(parent_class)) {
-		// If base is a custom type, replace with script path instead.
-		const EditorData::CustomType *type = EditorNode::get_editor_data().get_custom_type_by_name(parent_class);
-		ERR_FAIL_NULL(type);
-		parent_class = "\"" + type->script->get_path() + "\"";
+	if (parent_class.is_empty()) {
+		parent_class = "Node";
 	}
 
-	String class_name = file_path->get_text().get_file().get_basename();
-	scr = language->make_template(sinfo.content, class_name, parent_class);
+	if (language != nullptr) {
+		Ref<Script> scr;
+		const ScriptLanguage::ScriptTemplate sinfo = _get_current_template();
 
-	if (is_built_in) {
-		scr->set_name(built_in_name->get_text());
-		// Make sure the script is compiled to make its type recognizable.
-		scr->reload();
+		if (!parent_name->get_text().is_quoted() && !ClassDB::class_exists(parent_class) && !ScriptServer::is_global_class(parent_class)) {
+			const EditorData::CustomType *type = EditorNode::get_editor_data().get_custom_type_by_name(parent_class);
+			if (type) {
+				parent_class = "\"" + type->script->get_path() + "\"";
+			}
+		}
+
+		scr = language->make_template(sinfo.content, cname, parent_class);
+
+		if (is_built_in) {
+			scr->set_name(built_in_name->get_text());
+			scr->reload();
+		} else {
+			String lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
+			scr->set_path(lpath);
+			Error err = ResourceSaver::save(scr, lpath, ResourceSaver::FLAG_CHANGE_PATH);
+			if (err != OK) {
+				alert->set_text(TTR("Error - Could not create script in filesystem."));
+				alert->popup_centered();
+				return;
+			}
+		}
+
+		emit_signal(SNAME("script_created"), scr);
 	} else {
+		// PMDoT native template file creation (C#, C++, Java, Markdown)
 		String lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
-		scr->set_path(lpath);
-		Error err = ResourceSaver::save(scr, lpath, ResourceSaver::FLAG_CHANGE_PATH);
-		if (err != OK) {
-			alert->set_text(TTR("Error - Could not create script in filesystem."));
+		String global_path = ProjectSettings::get_singleton()->globalize_path(lpath);
+
+		const ScriptLanguage::ScriptTemplate sinfo = _get_current_template();
+		String content = sinfo.content;
+		content = content.replace("_CLASS_", cname);
+		content = content.replace("_BASE_", parent_class);
+
+		Ref<FileAccess> f = FileAccess::open(global_path, FileAccess::WRITE);
+		if (f.is_null()) {
+			alert->set_text(TTR("Error - Could not create file in filesystem."));
 			alert->popup_centered();
 			return;
 		}
+		f->store_string(content);
+		f->close();
+
+		EditorFileSystem::get_singleton()->update_file(lpath);
+		if (ScriptServer::edit_request_func) {
+			ScriptServer::edit_request_func(lpath);
+		}
 	}
 
-	emit_signal(SNAME("script_created"), scr);
 	hide();
 }
 
@@ -402,26 +453,21 @@ void ScriptCreateDialog::_load_exist() {
 }
 
 void ScriptCreateDialog::_language_changed(int l) {
-	if (l < 0 || l >= ScriptServer::get_language_count() || ScriptServer::get_language_count() == 0) {
-		language = nullptr;
-		can_inherit_from_file = false;
-		supports_built_in = false;
-		is_built_in = false;
-		validation_panel->update();
+	if (l < 0 || l >= language_menu->get_item_count()) {
 		return;
 	}
 
-	language = ScriptServer::get_language(l);
-	if (!language) {
-		can_inherit_from_file = false;
-		supports_built_in = false;
-		is_built_in = false;
-		validation_panel->update();
-		return;
+	String selected_name = language_menu->get_item_text(l);
+	language = nullptr;
+	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
+		if (ScriptServer::get_language(i)->get_name() == selected_name) {
+			language = ScriptServer::get_language(i);
+			break;
+		}
 	}
 
-	can_inherit_from_file = language->can_inherit_from_file();
-	supports_built_in = language->supports_builtin_mode();
+	can_inherit_from_file = language ? language->can_inherit_from_file() : false;
+	supports_built_in = language ? language->supports_builtin_mode() : false;
 	if (!supports_built_in) {
 		is_built_in = false;
 	}
@@ -431,9 +477,7 @@ void ScriptCreateDialog::_language_changed(int l) {
 	_path_changed(path);
 	file_path->set_text(path);
 
-	if (language_menu->get_selected() >= 0 && language_menu->get_selected() < language_menu->get_item_count()) {
-		EditorSettings::get_singleton()->set_project_metadata("script_setup", "last_selected_language", language_menu->get_item_text(language_menu->get_selected()));
-	}
+	EditorSettings::get_singleton()->set_project_metadata("script_setup", "last_selected_language", selected_name);
 
 	_parent_name_changed(parent_name->get_text());
 	validation_panel->update();
@@ -540,9 +584,65 @@ void ScriptCreateDialog::_path_changed(const String &p_path) {
 
 void ScriptCreateDialog::_update_template_menu() {
 	if (language == nullptr) {
-		template_menu->set_disabled(true);
 		template_menu->clear();
 		template_list.clear();
+		template_menu->set_disabled(false);
+
+		String lang_name = (language_menu && language_menu->get_selected() >= 0) ? language_menu->get_item_text(language_menu->get_selected()) : "C#";
+		ScriptLanguage::ScriptTemplate t;
+		t.origin = ScriptLanguage::TEMPLATE_BUILT_IN;
+		t.name = "Default";
+		t.inherit = parent_name->get_text().is_empty() ? "Node" : parent_name->get_text();
+
+		if (lang_name == "C#") {
+			t.description = "Default C# class";
+			t.content =
+				"using Godot;\n"
+				"using System;\n\n"
+				"public partial class _CLASS_ : _BASE_\n"
+				"{\n"
+				"\t// Called when the node enters the scene tree for the first time.\n"
+				"\tpublic override void _Ready()\n"
+				"\t{\n"
+				"\t}\n\n"
+				"\t// Called every frame. 'delta' is the elapsed time since the previous frame.\n"
+				"\tpublic override void _Process(double delta)\n"
+				"\t{\n"
+				"\t}\n"
+				"}\n";
+		} else if (lang_name == "C++") {
+			t.description = "Default C++ class";
+			t.content =
+				"#include \"_CLASS_.h\"\n\n"
+				"void _CLASS_::_bind_methods() {\n"
+				"}\n\n"
+				"_CLASS_::_CLASS_() {\n"
+				"}\n\n"
+				"_CLASS_::~_CLASS_() {\n"
+				"}\n";
+		} else if (lang_name == "Java") {
+			t.description = "Java class (Roadmap - does not compile yet)";
+			t.content =
+				"// NOTE: Java runtime support is planned in the PMDoT roadmap and does not compile yet.\n"
+				"package com.pmdt.game;\n\n"
+				"public class _CLASS_ extends _BASE_ {\n"
+				"\tpublic void _ready() {\n"
+				"\t}\n\n"
+				"\tpublic void _process(double delta) {\n"
+				"\t}\n"
+				"}\n";
+		} else if (lang_name == "Markdown") {
+			t.description = "Markdown documentation file";
+			t.content =
+				"# _CLASS_\n\n"
+				"Documentation for _BASE_.\n";
+		}
+
+		t.id = 0;
+		template_list.push_back(t);
+		template_menu->add_item(t.name + " (" + lang_name + ")");
+		template_menu->select(0);
+		_template_changed(0);
 		return;
 	}
 	bool is_language_using_templates = language->is_using_templates();
@@ -636,6 +736,11 @@ void ScriptCreateDialog::_update_template_menu() {
 void ScriptCreateDialog::_update_dialog() {
 	// "Add Script Dialog" GUI logic and script checks.
 	_update_template_menu();
+
+	// Show warning for languages that do not compile yet (Java)
+	if (language_menu && language_menu->get_selected() >= 0 && language_menu->get_item_text(language_menu->get_selected()) == "Java") {
+		validation_panel->set_message(MSG_ID_TEMPLATE, TTR("Warning: Java runtime support is in development (roadmap) and does not compile yet."), EditorValidationPanel::MSG_WARNING, false);
+	}
 
 	// Is script path/name valid (order from top to bottom)?
 
@@ -907,13 +1012,30 @@ ScriptCreateDialog::ScriptCreateDialog() {
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
 		String lang = ScriptServer::get_language(i)->get_name();
 		language_menu->add_item(lang);
-		if (lang == "GDScript" || default_language == -1) {
+		if (default_language == -1) {
 			default_language = i;
 		}
 	}
-	if (default_language >= 0 && language_menu->get_item_count() > 0) {
-		language_menu->select(default_language);
+
+	// Always provide PMDoT standard default languages: C#, C++, Java, Markdown
+	const char *pmdot_languages[] = { "C#", "C++", "Java", "Markdown" };
+	for (const char *plang : pmdot_languages) {
+		bool exists = false;
+		for (int i = 0; i < language_menu->get_item_count(); i++) {
+			if (language_menu->get_item_text(i) == plang) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) {
+			language_menu->add_item(plang);
+		}
 	}
+
+	if (default_language == -1) {
+		default_language = 0;
+	}
+	language_menu->select(default_language);
 
 	language_menu->connect(SceneStringName(item_selected), callable_mp(this, &ScriptCreateDialog::_language_changed));
 
