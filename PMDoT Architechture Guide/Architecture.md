@@ -1,16 +1,16 @@
 # Architecture — PMDoT Engine
 
-PMDoT é um fork do **Godot Engine 4.3-stable**, mantido pela PMDT Studios.
+PMDoT is a specialized fork of **Godot Engine 4.3-stable**, maintained by PMDT Studios for high-performance Pixel Art game development.
 
-> Estado documentado: **atual** (GDScript ainda presente) e **alvo** (após o CHG-002, ver `Changes.md`).
+> Documented state: **Current** (post-CHG-002: GDScript fully removed, native C++ and C# active, Java planned in the roadmap).
 
 ---
 
-## 1. Visão de alto nível do repositório
+## 1. High-Level Repository Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Root["d:/PMDoT (raiz)"]
+    subgraph Root["d:/PMDoT (Root)"]
         CLI["pmdot.py + pmdot / pmdot.bat / pmdot.ps1"]
         BuildPy["build_pmdot.py"]
         Docker["Dockerfile / docker-compose.yml"]
@@ -36,62 +36,68 @@ flowchart TD
     Modules --> Aseprite["pmdot_aseprite (custom)"]
 ```
 
-| Caminho | Responsabilidade |
+| Path | Responsibility |
 |---|---|
-| `pmdot.py` | CLI única: `install`, `version`, `update`, `build` (incremental por segmentos), `run`, `doctor`, `clean`, `--project create` |
-| `pmdot`, `pmdot.bat`, `pmdot.ps1` | Wrappers da CLI para Linux/macOS e Windows |
-| `build_pmdot.py` | Script de build legado e direto (SCons, `-j4`) |
-| `.pmdot_cache/` | Hashes SHA256 dos segmentos de build (ignorado pelo git) |
-| `architecture-guidelines/` | Guia técnico do Aseprite/SIMD e referência da CLI |
-| `PMDoT Architechture Guide/` | Este guia: arquitetura, módulos, pastas, testes e changelog |
-| `source-godot/` | Código da engine (fork do Godot 4.3) |
+| `pmdot.py` | Unified CLI: `install`, `version`, `update`, `build` (segmented incremental builds), `run`, `doctor`, `clean`, `--project create` |
+| `pmdot`, `pmdot.bat`, `pmdot.ps1` | CLI platform wrappers for Linux, macOS, and Windows |
+| `build_pmdot.py` | Standalone direct build script (SCons, `-j4`) |
+| `.pmdot_cache/` | SHA256 build segment cache (git-ignored) |
+| `architecture-guidelines/` | Low-level technical guidelines for Aseprite/SIMD and CLI reference |
+| `PMDoT Architechture Guide/` | Core architectural guide: Architecture, Modules, Path Guidelines, Testing, and Changes |
+| `source-godot/` | Engine codebase (Godot 4.3 fork) |
 
-## 2. Build segmentado (`pmdot build`)
+---
 
-`BUILD_SEGMENTS` em `pmdot.py` divide `source-godot` em 10 segmentos. Cada um tem um hash SHA256 calculado a partir das extensões `.cpp .c .h .hpp .py .inc`:
+## 2. Segmented Incremental Build System (`pmdot build`)
 
-`godot_core` · `godot_scene` · `godot_servers` · `godot_editor` · `godot_drivers` · `godot_platform` · `godot_main` · `godot_thirdparty` · `godot_modules` (exclui `pmdot_*`) · `pmdot_aseprite`
+`BUILD_SEGMENTS` in `pmdot.py` segments `source-godot` into 10 independent verification zones. Each computes a composite SHA256 hash across tracked source file extensions (`.cpp`, `.c`, `.h`, `.hpp`, `.py`, `.inc`):
 
-Comando SCons base (atual):
+`godot_core` · `godot_scene` · `godot_servers` · `godot_editor` · `godot_drivers` · `godot_platform` · `godot_main` · `godot_thirdparty` · `godot_modules` (excluding `pmdot_*`) · `pmdot_aseprite`
+
+Base SCons invocation:
+```bash
+scons platform=<os> target=editor disable_exceptions=no custom_modules=modules/pmdot_aseprite module_gdscript_enabled=no module_jsonrpc_enabled=no -j8
 ```
-scons platform=<os> target=editor disable_exceptions=no custom_modules=modules/pmdot_aseprite -j8
-```
-Alvo pós-CHG-002: adicionar `module_gdscript_enabled=no module_jsonrpc_enabled=no` (até a pasta ser apagada fisicamente).
 
-## 3. Camada de scripting
+---
+
+## 3. Scripting and Gameplay Runtime Layer
 
 ```mermaid
 flowchart LR
     SS["ScriptServer / ScriptLanguage (core)"]
-    GD["GDScriptLanguage (modules/gdscript)"]
-    CS["CSharpLanguage (modules/mono) - desabilitado"]
+    CS["CSharpLanguage (modules/mono)"]
     GDE["GDExtension (core/extension)"]
-    CPP["Módulos C++ nativos (pmdot_*)"]
-    SS --> GD
+    CPP["Native C++ Modules (pmdot_*)"]
     SS --> CS
     SS --> GDE
     CPP --> SS
-    style GD stroke-dasharray: 5 5
 ```
 
-| Estado | Linguagens disponíveis para gameplay |
+| State | Supported Gameplay Languages |
 |---|---|
-| Atual | GDScript, GDExtension (C++), módulos nativos |
-| Alvo (CHG-002) | **C++ (GDExtension e módulos nativos)** e **C# (módulo `mono` / .NET)**. No futuro, suporte a **Java** também será integrado. |
+| Target / Current | **C++ (GDExtension & Native Engine Modules)** and **C# (`mono` module / .NET)**. In the future, native **Java** runtime support is planned. |
+| Legacy (Removed) | GDScript (`modules/gdscript`) and JSON-RPC (`modules/jsonrpc`) have been completely decoupled and removed. |
 
-A camada genérica (`core/object/script_language*`, `ScriptServer`, `core/extension/`) **permanece**. Só a implementação de linguagem GDScript sai.
+The core script abstraction layer (`core/object/script_language*`, `ScriptServer`, `core/extension/`) remains in place to serve C# and GDExtension bindings.
 
-## 4. Fluxo de inicialização dos módulos
+---
 
-1. `modules/SCsub` lê os `config.py` de cada módulo (`can_build`, `configure`) e gera `modules_enabled.gen.h` com `MODULE_<NOME>_ENABLED`.
-2. `register_module_types.gen.cpp` chama `initialize_<modulo>_module(level)` para cada nível (`CORE`, `SERVERS`, `SCENE`, `EDITOR`).
-3. Código fora do módulo que depende dele **deve** estar protegido por `#ifdef MODULE_<NOME>_ENABLED`.
+## 4. Module Initialization Lifecycle
 
-## 5. Pipeline Aseprite / Pixel Art
-Ver `architecture-guidelines/aseprite_architecture_guide.md` (SIMD AVX2/SSE4.1, `EditorAsepriteWorkspace`, `PMDoTPixelArtPresets`).
+1. `modules/SCsub` scans `config.py` in every module (`can_build`, `configure`) and dynamically generates `modules_enabled.gen.h` with `MODULE_<NAME>_ENABLED` preprocessor macros.
+2. `register_module_types.gen.cpp` executes `initialize_<module>_module(level)` for each lifecycle phase (`CORE`, `SERVERS`, `SCENE`, `EDITOR`).
+3. External code depending on any module must be guarded with `#ifdef MODULE_<NAME>_ENABLED`.
 
-## 6. Regras de arquitetura
-- Funcionalidade nova da PMDoT vai em **módulo próprio `modules/pmdot_<nome>/`**. Evite alterar `core/`, `scene/` e `editor/` diretamente.
-- Toda alteração em arquivo upstream do Godot deve ser registrada em `Changes.md`, com arquivo e linha.
-- Dependências entre módulos são declaradas em `config.py` com `env.module_add_dependencies()`.
-- Remover módulo: primeiro desabilite por flag, valide, e só então apague a pasta (ver o processo do CHG-002).
+---
+
+## 5. Aseprite & SIMD Pixel Art Pipeline
+For low-level SIMD specifications (AVX2/SSE4.1 routines, `EditorAsepriteWorkspace`, and `PMDoTPixelArtPresets`), refer to `architecture-guidelines/aseprite_architecture_guide.md`.
+
+---
+
+## 6. Architectural Rules
+- All new PMDoT features must reside in dedicated custom modules under `source-godot/modules/pmdot_<name>/`. Avoid direct modifications to upstream Godot directories (`core/`, `scene/`, `editor/`).
+- Any unavoidable modification to upstream Godot files must be recorded in `Changes.md` with exact file paths and reasoning.
+- Inter-module dependencies must be declared in `config.py` using `env.module_add_dependencies()`.
+- Module deprecation and removal must follow the standard decoupling and verification lifecycle (flag disablement, source tree cleanup, macro scrubbing, and test suite adjustment).

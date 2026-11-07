@@ -1,52 +1,59 @@
-# Modules — Inventário de Módulos (`source-godot/modules/`)
+# Modules — Module Inventory (`source-godot/modules/`)
 
-Legenda de status: ✅ ativo · 🟣 custom PMDoT · ⛔ desabilitado · 🗑️ remoção planejada (CHG-002)
+Status Key: ✅ Active · 🟣 Custom PMDoT · ⛔ Disabled · 🗑️ Purged / Removed (CHG-002)
 
-## 1. Módulos PMDoT
+---
 
-| Módulo | Status | Descrição | Arquivos-chave |
+## 1. PMDoT Modules
+
+| Module | Status | Description | Key Files |
 |---|---|---|---|
-| `pmdot_aseprite` | 🟣 ✅ | Workspace Aseprite embutido no editor, pipeline SIMD de pixels e presets de Pixel Art | `register_types.cpp`, `pmdot_pixel_pipeline.cpp/.h`, `editor/aseprite_workspace.cpp/.h`, `editor/pixel_art_presets.cpp/.h`, `thirdparty/aseprite` |
+| `pmdot_aseprite` | 🟣 ✅ | Embedded native Aseprite workspace in the editor, real-time SIMD pixel conversion pipeline, and Pixel Art presets | `register_types.cpp`, `pmdot_pixel_pipeline.cpp/.h`, `editor/aseprite_workspace.cpp/.h`, `editor/pixel_art_presets.cpp/.h`, `thirdparty/aseprite` |
 
-Detalhes: `architecture-guidelines/aseprite_architecture_guide.md`.
+For in-depth technical details, see `architecture-guidelines/aseprite_architecture_guide.md`.
 
-## 2. Linguagens de script
+---
 
-| Módulo | Status | Descrição | Observação |
+## 2. Scripting & Language Modules
+
+| Module | Status | Description | Notes |
 |---|---|---|---|
-| `gdscript` | 🗑️ | Linguagem GDScript: tokenizer, parser, analyzer, compiler, VM, editor (highlighter, docgen, templates) e LSP | Cerca de 71 MB, 1.343 arquivos versionados. Ver `Changes.md` › CHG-002 |
-| `jsonrpc` | 🗑️ (decisão) | Classe `JSONRPC`. Único consumidor: o LSP do GDScript | Dependência declarada em `gdscript/config.py` |
-| `mono` | 🔄 | C#/.NET (`module_mono_enabled=yes`). Linguagem de gameplay suportada juntamente com C++ | Em processo de ativação/configuração |
+| `gdscript` | 🗑️ | Legacy GDScript language (tokenizer, parser, analyzer, compiler, VM, LSP, templates) | Completely removed (~71 MB, 1,343 files). See `Changes.md` (CHG-002). |
+| `jsonrpc` | 🗑️ | JSON-RPC protocol implementation | Removed; sole consumer was GDScript language server protocol. |
+| `mono` | 🔄 | C#/.NET engine integration (`module_mono_enabled=yes`) | Primary supported scripting language alongside native C++. |
 
-## 3. Módulos Godot built-in mantidos
+---
 
-| Categoria | Módulos |
+## 3. Retained Upstream Godot Modules
+
+| Category | Modules |
 |---|---|
-| Imagem / textura | `astcenc`, `basis_universal`, `bmp`, `cvtt`, `dds`, `etcpak`, `hdr`, `jpg`, `ktx`, `squish`, `svg`, `tga`, `tinyexr`, `webp` |
-| Áudio | `interactive_music`, `minimp3`, `ogg`, `vorbis` |
-| Vídeo | `theora` |
-| Fontes / texto | `freetype`, `msdfgen`, `text_server_adv`, `text_server_fb` |
-| Cena 3D / import | `csg`, `fbx`, `gltf`, `gridmap`, `lightmapper_rd`, `meshoptimizer`, `raycast`, `vhacd`, `xatlas_unwrap` |
-| Navegação / ruído | `navigation`, `noise` |
-| Rede | `enet`, `mbedtls`, `multiplayer`, `upnp`, `webrtc`, `websocket` |
+| Image / Texture | `astcenc`, `basis_universal`, `bmp`, `cvtt`, `dds`, `etcpak`, `hdr`, `jpg`, `ktx`, `squish`, `svg`, `tga`, `tinyexr`, `webp` |
+| Audio | `interactive_music`, `minimp3`, `ogg`, `vorbis` |
+| Video | `theora` |
+| Typography / Font | `freetype`, `msdfgen`, `text_server_adv`, `text_server_fb` |
+| 3D Scene / Import | `csg`, `fbx`, `gltf`, `gridmap`, `lightmapper_rd`, `meshoptimizer`, `raycast`, `vhacd`, `xatlas_unwrap` |
+| Navigation / Math | `navigation`, `noise` |
+| Networking | `enet`, `mbedtls`, `multiplayer`, `upnp`, `webrtc`, `websocket` |
 | XR | `mobile_vr`, `openxr`, `webxr` |
-| Utilitários | `camera`, `glslang`, `regex`, `zip` |
+| System Utilities | `camera`, `glslang`, `regex`, `zip` |
 
 > [!NOTE]
-> `websocket` **não** sai junto com o GDScript: ele é usado também por `multiplayer`/`webrtc` e pelo debugger remoto.
+> `websocket` is **retained** despite GDScript LSP removal, as it serves multiplayer networking, WebRTC signaling, and the remote debugger.
 
-## 4. Template para registrar um novo módulo
+---
 
-Ao criar um módulo, adicione uma linha na seção 1 e registre a criação em `Changes.md`.
+## 4. Module Registration Checklist
 
+When creating a new module, add a record to Section 1 and log the change in `Changes.md`:
+
+```markdown
+| `pmdot_<name>` | 🟣 ✅ | <short description> | <key files> |
 ```
-| `pmdot_<nome>` | 🟣 ✅ | <descrição curta> | <arquivos-chave> |
-```
 
-Checklist:
-- [ ] `config.py` com `can_build`, `configure` e dependências (`env.module_add_dependencies`)
-- [ ] `SCsub` adicionando os fontes a `env.modules_sources`
-- [ ] `register_types.cpp/.h` com `initialize_pmdot_<nome>_module` / `uninitialize_...`
-- [ ] Testes em `tests/test_<nome>.h` (ver `Test guide.md`)
-- [ ] Incluído em `custom_modules` e em `BUILD_SEGMENTS` do `pmdot.py`
-
+Verification Checklist:
+- [ ] `config.py` with `can_build()`, `configure()`, and explicit dependency declarations (`env.module_add_dependencies`).
+- [ ] `SCsub` appending sources to `env.modules_sources`.
+- [ ] `register_types.cpp/.h` providing `initialize_pmdot_<name>_module` and `uninitialize_pmdot_<name>_module`.
+- [ ] Unit tests in `tests/test_<name>.h` (see `Test guide.md`).
+- [ ] Added to `custom_modules` and `BUILD_SEGMENTS` in `pmdot.py`.

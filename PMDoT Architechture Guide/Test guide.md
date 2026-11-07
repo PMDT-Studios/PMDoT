@@ -1,63 +1,70 @@
-# Test Guide — Testes na PMDoT Engine
+# Test Guide — Engine & Module Verification
 
-A engine usa o framework **doctest** integrado ao Godot (`source-godot/tests/`).
+PMDoT uses the Godot-integrated **doctest** test framework located under `source-godot/tests/`.
 
-## 1. Compilar com testes
+---
+
+## 1. Compiling with Test Suite Support
 
 ```powershell
 cd source-godot
-scons platform=windows target=editor tests=yes disable_exceptions=no custom_modules=modules/pmdot_aseprite -j8
+scons platform=windows target=editor tests=yes disable_exceptions=no custom_modules=modules/pmdot_aseprite module_gdscript_enabled=no module_jsonrpc_enabled=no -j8
 ```
-> Hoje `.scons_env.json` registra `tests: false`, então o build padrão do `pmdot build` **não** inclui testes.
 
-## 2. Executar
+> By default, standard builds via `pmdot build` have `tests=false` to maximize build velocity.
+
+---
+
+## 2. Running Engine Tests
 
 ```powershell
-bin\godot.windows.editor.x86_64.console.exe --test                       # tudo
-bin\godot.windows.editor.x86_64.console.exe --test --test-case="*Pixel*"  # filtro por nome
+bin\godot.windows.editor.x86_64.console.exe --test                       # Run all test cases
+bin\godot.windows.editor.x86_64.console.exe --test --test-case="*Pixel*"  # Filter by case name
 bin\godot.windows.editor.x86_64.console.exe --test --test-suite="[ProjectSettings]*"
 ```
 
-## 3. Onde ficam os testes
+---
 
-| Tipo | Caminho | Descoberta |
+## 3. Test File Conventions and Layout
+
+| Scope | Directory | Discovery Mechanism |
 |---|---|---|
-| Engine (core/scene/servers) | `source-godot/tests/<área>/test_*.h` | Incluídos em `tests/test_main.cpp` |
-| Módulo | `source-godot/modules/<modulo>/tests/*.h` | Automática: `modules/SCsub` gera `modules_tests.gen.h` |
+| Core Engine (core/scene/servers) | `source-godot/tests/<subsystem>/test_*.h` | Statically linked in `tests/test_main.cpp` |
+| Modules | `source-godot/modules/<module>/tests/*.h` | Dynamically scanned: `modules/SCsub` generates `modules_tests.gen.h` |
 
-Template de teste de módulo:
+### Module Test Template:
 ```cpp
-// modules/pmdot_<nome>/tests/test_<assunto>.h
+// modules/pmdot_<name>/tests/test_<feature>.h
 #pragma once
 #include "tests/test_macros.h"
-#include "../<nome>.h"
+#include "../<name>.h"
 
-namespace TestPMDoT<Nome> {
-TEST_CASE("[PMDoT][<Nome>] descreve o comportamento") {
+namespace TestPMDoT<Name> {
+TEST_CASE("[PMDoT][<Name>] Describe feature behavior") {
 	CHECK(...);
 }
-} // namespace TestPMDoT<Nome>
+} // namespace TestPMDoT<Name>
 ```
-Convenção: o nome da suíte começa com `[PMDoT]` para facilitar o filtro `--test-case="[PMDoT]*"`.
 
-## 4. Impacto do CHG-002 (remoção do GDScript) nos testes
+> **Convention:** All test suites must prefix their test cases with `[PMDoT]` so they can be isolated using `--test-case="[PMDoT]*"`.
 
-| Item | Ação |
+---
+
+## 4. Impact of GDScript Removal (CHG-002) on Tests
+
+| Target | Action Taken |
 |---|---|
-| `modules/gdscript/tests/` (`gdscript_test_runner.*`, `test_gdscript.*`, `test_completion.h`, `test_lsp.h`, `scripts/` com cerca de 1.260 arquivos `.gd`/`.out`) | **Apagar** junto com o módulo |
-| `modules/jsonrpc/tests/test_jsonrpc.*` | Apagar se o `jsonrpc` for removido |
-| `tests/core/config/test_project_settings.h` (2 casos que esperam `"GDScript Integration Test Suite"`) | **Corrigir**: definir `application/config/name` dentro do teste e restaurar no final. Hoje esse valor vem de `modules/gdscript/tests/scripts/project.godot` |
-| `tests/scene/test_primitives.h:749` (`STRUCTURED_TEXT_GDSCRIPT`) | Manter: o enum é API pública e continua existindo |
+| `modules/gdscript/tests/` (`gdscript_test_runner.*`, `test_gdscript.*`, `test_completion.h`, `test_lsp.h`, and `scripts/` with ~1,260 scripts) | **Deleted** along with the module. |
+| `modules/jsonrpc/tests/test_jsonrpc.*` | **Deleted** along with JSON-RPC. |
+| `tests/core/config/test_project_settings.h` | **Decoupled**: dynamically initializes `application/config/name` within test cases, eliminating reliance on the removed `GDScript Integration Test Suite` project file. |
+| `tests/scene/test_primitives.h:749` (`STRUCTURED_TEXT_GDSCRIPT`) | **Retained**: preserved as public enum constant. |
 
-## 5. Checklist de validação de uma mudança estrutural
-- [ ] `pmdot build --force` compila
-- [ ] Build com `tests=yes` compila
-- [ ] `--test` 100% verde
-- [ ] Editor abre sem `ERROR`/`WARNING` no console (`*.console.exe`)
-- [ ] Script Editor, Editor Settings e Editor Help abrem sem erros
-- [ ] Workspace Aseprite (`pmdot_aseprite`) funciona
-- [ ] Resultado registrado em `Changes.md`
+---
 
-## 6. Módulos PMDoT sem cobertura (pendência)
-- `pmdot_aseprite`: ainda **sem** `tests/`. Sugestão: testes de `PMDoTPixelPipeline` (expansão de paleta, swizzle BGRA→RGBA, premultiplicação de alpha) comparando a saída SIMD com uma implementação escalar de referência.
-
+## 5. Structural Change Verification Checklist
+- [ ] Clean build passes: `pmdot build --force`
+- [ ] Test build passes: SCons with `tests=yes`
+- [ ] Engine tests pass (`--test`)
+- [ ] Editor executable starts with zero console `ERROR` / `WARNING` logs
+- [ ] Embedded Aseprite Workspace (`pmdot_aseprite`) mounts cleanly in editor
+- [ ] Changes recorded in `Changes.md`
