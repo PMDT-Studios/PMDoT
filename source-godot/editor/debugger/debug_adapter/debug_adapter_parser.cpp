@@ -196,21 +196,11 @@ Dictionary DebugAdapterParser::_launch_process(const Dictionary &p_params) const
 	if (platform_string == "host") {
 		EditorRunBar::get_singleton()->play_main_scene();
 	} else {
-		int device = args.get("device", -1);
 		int idx = -1;
-		if (platform_string == "android") {
-			for (int i = 0; i < EditorExport::get_singleton()->get_export_platform_count(); i++) {
-				if (EditorExport::get_singleton()->get_export_platform(i)->get_name() == "Android") {
-					idx = i;
-					break;
-				}
-			}
-		} else if (platform_string == "web") {
-			for (int i = 0; i < EditorExport::get_singleton()->get_export_platform_count(); i++) {
-				if (EditorExport::get_singleton()->get_export_platform(i)->get_name() == "Web") {
-					idx = i;
-					break;
-				}
+		for (int i = 0; i < EditorExport::get_singleton()->get_export_platform_count(); i++) {
+			if (EditorExport::get_singleton()->get_export_platform(i)->get_name().to_lower() == platform_string.to_lower()) {
+				idx = i;
+				break;
 			}
 		}
 
@@ -219,13 +209,9 @@ Dictionary DebugAdapterParser::_launch_process(const Dictionary &p_params) const
 		}
 
 		EditorRunBar *run_bar = EditorRunBar::get_singleton();
-		Error err = platform_string == "android" ? run_bar->start_native_device(device * 10000 + idx) : run_bar->start_native_device(idx);
+		Error err = run_bar->start_native_device(idx);
 		if (err) {
-			if (err == ERR_INVALID_PARAMETER && platform_string == "android") {
-				return prepare_error_response(p_params, DAP::ErrorType::MISSING_DEVICE);
-			} else {
-				return prepare_error_response(p_params, DAP::ErrorType::UNKNOWN);
-			}
+			return prepare_error_response(p_params, DAP::ErrorType::UNKNOWN);
 		}
 	}
 

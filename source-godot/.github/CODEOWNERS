@@ -127,7 +127,6 @@ doc_classes/*                       @godotengine/documentation
 /modules/camera/                    @godotengine/xr
 /modules/gdextension/xr/            @godotengine/xr
 /modules/mobile_vr/                 @godotengine/xr
-/modules/webxr/                     @godotengine/xr
 
 ## Misc
 /modules/bullet/                    @godotengine/physics

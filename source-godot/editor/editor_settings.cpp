@@ -865,7 +865,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "project_manager/sorting_order", 0, "Last Edited,Name,Path")
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "project_manager/directory_naming_convention", 1, "No convention,kebab-case,snake_case,camelCase,PascalCase,Title Case")
 
-	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_ENUM, "project_manager/default_renderer", "forward_plus", "forward_plus,mobile,gl_compatibility")
+	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_ENUM, "project_manager/default_renderer", "forward_plus", "forward_plus,gl_compatibility")
 
 	if (p_extra_config.is_valid()) {
 		if (p_extra_config->has_section("init_projects") && p_extra_config->has_section_key("init_projects", "list")) {
@@ -1685,9 +1685,7 @@ void ED_SHORTCUT_OVERRIDE_ARRAY(const String &p_path, const String &p_feature, c
 
 	// Only add the override if the OS supports the provided feature.
 	if (!OS::get_singleton()->has_feature(p_feature)) {
-		if (!(p_feature == "macos" && (OS::get_singleton()->has_feature("web_macos") || OS::get_singleton()->has_feature("web_ios")))) {
-			return;
-		}
+		return;
 	}
 
 	Array events;
@@ -1695,7 +1693,7 @@ void ED_SHORTCUT_OVERRIDE_ARRAY(const String &p_path, const String &p_feature, c
 	for (int i = 0; i < p_keycodes.size(); i++) {
 		Key keycode = (Key)p_keycodes[i];
 
-		if (OS::get_singleton()->has_feature("macos") || OS::get_singleton()->has_feature("web_macos") || OS::get_singleton()->has_feature("web_ios")) {
+		if (OS::get_singleton()->has_feature("macos")) {
 			// Use Cmd+Backspace as a general replacement for Delete shortcuts on macOS
 			if (keycode == Key::KEY_DELETE) {
 				keycode = KeyModifierMask::META | Key::BACKSPACE;
@@ -1729,7 +1727,7 @@ Ref<Shortcut> ED_SHORTCUT_ARRAY(const String &p_path, const String &p_name, cons
 	for (int i = 0; i < p_keycodes.size(); i++) {
 		Key keycode = (Key)p_keycodes[i];
 
-		if (OS::get_singleton()->has_feature("macos") || OS::get_singleton()->has_feature("web_macos") || OS::get_singleton()->has_feature("web_ios")) {
+		if (OS::get_singleton()->has_feature("macos")) {
 			// Use Cmd+Backspace as a general replacement for Delete shortcuts on macOS
 			if (keycode == Key::KEY_DELETE) {
 				keycode = KeyModifierMask::META | Key::BACKSPACE;

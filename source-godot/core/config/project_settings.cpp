@@ -1481,19 +1481,17 @@ ProjectSettings::ProjectSettings() {
 
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, "audio/buses/default_bus_layout", PROPERTY_HINT_FILE, "*.tres"), "res://default_bus_layout.tres");
 	GLOBAL_DEF(PropertyInfo(Variant::INT, "audio/general/default_playback_type", PROPERTY_HINT_ENUM, "Stream,Sample"), 0);
-	GLOBAL_DEF(PropertyInfo(Variant::INT, "audio/general/default_playback_type.web", PROPERTY_HINT_ENUM, "Stream,Sample"), 1);
 	GLOBAL_DEF_RST("audio/general/text_to_speech", false);
 	GLOBAL_DEF_RST(PropertyInfo(Variant::FLOAT, "audio/general/2d_panning_strength", PROPERTY_HINT_RANGE, "0,2,0.01"), 0.5f);
 	GLOBAL_DEF_RST(PropertyInfo(Variant::FLOAT, "audio/general/3d_panning_strength", PROPERTY_HINT_RANGE, "0,2,0.01"), 0.5f);
 
-	GLOBAL_DEF(PropertyInfo(Variant::INT, "audio/general/ios/session_category", PROPERTY_HINT_ENUM, "Ambient,Multi Route,Play and Record,Playback,Record,Solo Ambient"), 0);
-	GLOBAL_DEF("audio/general/ios/mix_with_others", false);
-
 	PackedStringArray extensions;
-	extensions.push_back("gd");
-	if (ClassDB::class_exists("CSharpScript")) {
-		extensions.push_back("cs");
-	}
+	extensions.push_back("cs");
+	extensions.push_back("cpp");
+	extensions.push_back("h");
+	extensions.push_back("hpp");
+	extensions.push_back("java");
+	extensions.push_back("md");
 	extensions.push_back("gdshader");
 
 	GLOBAL_DEF(PropertyInfo(Variant::PACKED_STRING_ARRAY, "editor/script/search_in_file_extensions"), extensions);
