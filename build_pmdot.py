@@ -31,7 +31,7 @@ def main():
         sys.exit(1)
 
     print("[PMDoT Build] Building PMDoT Engine using SCons...")
-    scons_cmd = ["scons", "platform=windows", "target=editor", "vsprops=yes", "-j4"]
+    scons_cmd = ["scons", "platform=windows", "target=editor", "module_gdscript_enabled=no", "module_jsonrpc_enabled=no", "vsprops=yes", "-j4"]
     
     # Dry-run check or build execution
     run_command(scons_cmd, cwd=godot_dir)

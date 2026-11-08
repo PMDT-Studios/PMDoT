@@ -324,9 +324,6 @@ def generate_scu_files(max_includes_per_scu):
     process_folder(["modules/openxr/editor"])
 
     process_folder(["modules/csg"])
-    process_folder(["modules/gdscript"])
-    process_folder(["modules/gdscript/editor"])
-    process_folder(["modules/gdscript/language_server"])
 
     process_folder(["scene/2d"])
     process_folder(["scene/2d/physics"])

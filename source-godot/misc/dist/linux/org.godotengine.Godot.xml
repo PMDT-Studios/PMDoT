@@ -28,11 +28,4 @@
     <icon name="x-godot-shader"/>
     <glob pattern="*.gdshader"/>
   </mime-type>
-
-  <mime-type type="application/x-gdscript">
-    <comment>GDScript script</comment>
-    <sub-class-of type="text/plain"/>
-    <icon name="x-gdscript"/>
-    <glob pattern="*.gd"/>
-  </mime-type>
 </mime-info>
