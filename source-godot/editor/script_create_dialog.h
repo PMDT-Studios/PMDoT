@@ -81,7 +81,7 @@ class ScriptCreateDialog : public ConfirmationDialog {
 	bool is_using_templates = true;
 	bool built_in_enabled = true;
 	bool load_enabled = true;
-	int default_language;
+	int default_language = -1;
 	bool re_check_path = false;
 
 	Control *path_controls[2];

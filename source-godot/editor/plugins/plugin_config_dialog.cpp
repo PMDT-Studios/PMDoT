@@ -77,6 +77,9 @@ void PluginConfigDialog::_on_confirmed() {
 }
 
 void PluginConfigDialog::_create_script_for_plugin(const String &p_plugin_path, Ref<ConfigFile> p_config_file, int p_script_lang_index) {
+	if (p_script_lang_index < 0 || p_script_lang_index >= ScriptServer::get_language_count() || ScriptServer::get_language_count() == 0) {
+		return;
+	}
 	ScriptLanguage *language = ScriptServer::get_language(p_script_lang_index);
 	ERR_FAIL_COND(language == nullptr);
 	String ext = language->get_extension();
@@ -124,6 +127,10 @@ void PluginConfigDialog::_on_required_text_changed() {
 	}
 	// Language and script validation.
 	int lang_idx = script_option_edit->get_selected();
+	if (lang_idx < 0 || lang_idx >= ScriptServer::get_language_count() || ScriptServer::get_language_count() == 0) {
+		validation_panel->set_message(MSG_ID_SCRIPT, TTR("No scripting languages available."), EditorValidationPanel::MSG_ERROR);
+		return;
+	}
 	ScriptLanguage *language = ScriptServer::get_language(lang_idx);
 	if (language == nullptr) {
 		return;
@@ -287,15 +294,17 @@ PluginConfigDialog::PluginConfigDialog() {
 
 	script_option_edit = memnew(OptionButton);
 	script_option_edit->set_tooltip_text(TTR("Required. The scripting language to use for the script.\nNote that a plugin may use several languages at once by adding more scripts to the plugin."));
-	int default_lang = 0;
+	int default_lang = -1;
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
 		ScriptLanguage *lang = ScriptServer::get_language(i);
 		script_option_edit->add_item(lang->get_name());
-		if (lang->get_name() == "GDScript") {
+		if (lang->get_name() == "GDScript" || default_lang == -1) {
 			default_lang = i;
 		}
 	}
-	script_option_edit->select(default_lang);
+	if (default_lang >= 0 && script_option_edit->get_item_count() > 0) {
+		script_option_edit->select(default_lang);
+	}
 	grid->add_child(script_option_edit);
 
 	// Plugin Script Name

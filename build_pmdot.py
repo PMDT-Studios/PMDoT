@@ -2,40 +2,23 @@
 """
 PMDoT Engine Build Automation Script
 Builds the custom Godot 4.3-stable engine with pmdot_aseprite module.
+Supports incremental segmented builds and per-segment changelog tracking.
 """
 
 import os
 import sys
-import subprocess
-import shutil
-
-def run_command(cmd, cwd=None):
-    print(f"[PMDoT Build] Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=cwd)
-    if result.returncode != 0:
-        print(f"[PMDoT Build] Error executing command: {' '.join(cmd)}")
-        sys.exit(result.returncode)
 
 def main():
     root_dir = os.path.abspath(os.path.dirname(__file__))
-    godot_dir = os.path.join(root_dir, "source-godot")
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
 
-    if not os.path.exists(godot_dir):
-        print("[PMDoT Build] Error: source-godot directory not found.")
+    try:
+        from pmdot import cmd_build
+        cmd_build(sys.argv[1:])
+    except ImportError as e:
+        print(f"[PMDoT Build] Error importing pmdot: {e}")
         sys.exit(1)
-
-    print("[PMDoT Build] Verifying module structure...")
-    module_dir = os.path.join(godot_dir, "modules", "pmdot_aseprite")
-    if not os.path.exists(module_dir):
-        print("[PMDoT Build] Error: pmdot_aseprite module directory missing.")
-        sys.exit(1)
-
-    print("[PMDoT Build] Building PMDoT Engine using SCons...")
-    scons_cmd = ["scons", "platform=windows", "target=editor", "module_gdscript_enabled=no", "module_jsonrpc_enabled=no", "vsprops=yes", "-j4"]
-    
-    # Dry-run check or build execution
-    run_command(scons_cmd, cwd=godot_dir)
-    print("[PMDoT Build] PMDoT Engine Build Complete successfully!")
 
 if __name__ == "__main__":
     main()

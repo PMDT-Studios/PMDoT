@@ -39,6 +39,9 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 CACHE_DIR = os.path.join(ROOT_DIR, ".pmdot_cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "cache.json")
 BUILD_SEGMENTS_FILE = os.path.join(CACHE_DIR, "build_segments.json")
+BUILD_MANIFEST_FILE = os.path.join(CACHE_DIR, "build_file_manifest.json")
+BUILD_CHANGELOG_FILE = os.path.join(CACHE_DIR, "build_changelog.json")
+LAST_CHANGELOG_MD = os.path.join(CACHE_DIR, "last_build_changelog.md")
 GODOT_DIR = os.path.join(ROOT_DIR, "source-godot")
 MODULE_DIR = os.path.join(GODOT_DIR, "modules", "pmdot_aseprite")
 
@@ -528,85 +531,146 @@ def print_project_create_help():
 BUILD_SEGMENTS = {
     "godot_core": {
         "path": "core",
+        "scons_target": "core",
         "description": "Godot Engine Core",
     },
     "godot_scene": {
         "path": "scene",
+        "scons_target": "scene",
         "description": "Scene System",
     },
     "godot_servers": {
         "path": "servers",
+        "scons_target": "servers",
         "description": "Rendering, Physics, Audio Servers",
     },
     "godot_editor": {
         "path": "editor",
+        "scons_target": "editor",
         "description": "Editor UI",
     },
     "godot_drivers": {
         "path": "drivers",
+        "scons_target": "drivers",
         "description": "GPU / Audio Drivers",
     },
     "godot_platform": {
         "path": "platform",
+        "scons_target": "platform",
         "description": "Platform-Specific Code",
     },
     "godot_main": {
         "path": "main",
+        "scons_target": "main",
         "description": "Main Entry Point",
     },
     "godot_thirdparty": {
         "path": "thirdparty",
+        "scons_target": "thirdparty",
         "description": "Third-Party Libraries",
     },
     "godot_modules": {
         "path": "modules",
+        "scons_target": "modules",
         "description": "Godot Built-in Modules (excl. pmdot_*)",
         "exclude_prefix": "pmdot_",
     },
     "pmdot_aseprite": {
         "path": os.path.join("modules", "pmdot_aseprite"),
+        "scons_target": "modules/pmdot_aseprite",
         "description": "PMDoT Aseprite Module",
     },
 }
 
-SOURCE_EXTENSIONS = {".cpp", ".c", ".h", ".hpp", ".py", ".inc"}
+SOURCE_EXTENSIONS = {".cpp", ".c", ".h", ".hpp", ".py", ".inc", ".glsl"}
 
 
-def compute_segment_hash(segment_key):
-    """Compute a combined SHA256 hash for all source files in a segment."""
+def scan_segment_files(segment_key, previous_manifest=None):
+    """
+    Scan all source files in a segment and return a dictionary:
+    { rel_path: { "mtime": mtime, "size": size, "hash": sha256 } }
+    Leverages previous_manifest for fast mtime/size caching and ThreadPoolExecutor for new files.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
     segment = BUILD_SEGMENTS[segment_key]
     segment_path = os.path.join(GODOT_DIR, segment["path"])
     exclude_prefix = segment.get("exclude_prefix", None)
 
     if not os.path.exists(segment_path):
-        return None
+        return {}
 
-    hasher = hashlib.sha256()
-    file_count = 0
+    prev_segment_files = previous_manifest.get(segment_key, {}) if previous_manifest else {}
+    files_info = {}
+    to_hash = []
 
     for root, dirs, files in os.walk(segment_path):
-        # If this segment has an exclude prefix, skip matching subdirectories
-        if exclude_prefix:
-            dirs[:] = [d for d in dirs if not d.startswith(exclude_prefix)]
+        dirs[:] = [
+            d for d in dirs
+            if not d.startswith(".")
+            and d != "__pycache__"
+            and not (exclude_prefix and d.startswith(exclude_prefix))
+        ]
 
-        # Sort for deterministic ordering
         for filename in sorted(files):
             ext = os.path.splitext(filename)[1].lower()
             if ext in SOURCE_EXTENSIONS:
-                filepath = os.path.join(root, filename)
+                full_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_path, GODOT_DIR).replace("\\", "/")
                 try:
-                    with open(filepath, "rb") as f:
-                        content = f.read()
-                    hasher.update(filepath.encode("utf-8"))
-                    hasher.update(content)
-                    file_count += 1
+                    st = os.stat(full_path)
+                    mtime = st.st_mtime
+                    size = st.st_size
+                    if (
+                        rel_path in prev_segment_files
+                        and prev_segment_files[rel_path].get("mtime") == mtime
+                        and prev_segment_files[rel_path].get("size") == size
+                        and "hash" in prev_segment_files[rel_path]
+                    ):
+                        files_info[rel_path] = {
+                            "mtime": mtime,
+                            "size": size,
+                            "hash": prev_segment_files[rel_path]["hash"],
+                        }
+                    else:
+                        to_hash.append((rel_path, full_path, mtime, size))
                 except (OSError, IOError):
                     pass
 
-    if file_count == 0:
-        return None
+    if to_hash:
+        def _hash_worker(item):
+            r_path, f_path, m_time, f_size = item
+            try:
+                with open(f_path, "rb") as f:
+                    file_hash = hashlib.sha256(f.read()).hexdigest()
+                return r_path, {"mtime": m_time, "size": f_size, "hash": file_hash}
+            except Exception:
+                return r_path, None
 
+        max_workers = min(16, max(4, os.cpu_count() or 4))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for r_path, info in executor.map(_hash_worker, to_hash):
+                if info is not None:
+                    files_info[r_path] = info
+
+    return files_info
+
+
+def compute_segment_hash_from_files(files_dict):
+    """Compute a single composite sha256 hash from the file manifest of a segment."""
+    if not files_dict:
+        return None
+    hasher = hashlib.sha256()
+    for rel_path in sorted(files_dict.keys()):
+        hasher.update(rel_path.encode("utf-8"))
+        hasher.update(files_dict[rel_path]["hash"].encode("utf-8"))
     return hasher.hexdigest()
+
+
+def compute_segment_hash(segment_key):
+    """Compute a combined SHA256 hash for all source files in a segment."""
+    files_dict = scan_segment_files(segment_key)
+    return compute_segment_hash_from_files(files_dict)
 
 
 def load_build_cache():
@@ -627,30 +691,154 @@ def save_build_cache(cache):
         json.dump(cache, f, indent=2)
 
 
-def detect_changed_segments(force=False, only=None):
-    """
-    Compare current segment hashes against cached hashes.
-    Returns (changed_segments, current_hashes).
-    """
-    cached = load_build_cache()
-    current_hashes = {}
-    changed = []
+def load_build_manifest():
+    """Load the source file manifest from disk."""
+    if os.path.exists(BUILD_MANIFEST_FILE):
+        try:
+            with open(BUILD_MANIFEST_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
 
-    segments_to_check = BUILD_SEGMENTS.keys()
+
+def save_build_manifest(manifest):
+    """Save the source file manifest to disk."""
+    ensure_cache()
+    with open(BUILD_MANIFEST_FILE, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+
+def detect_build_changelog(force=False, only=None):
+    """
+    Scans files per segment, compares against the last build manifest,
+    and returns (changelog_data, current_manifest, current_segment_hashes).
+    """
+    previous_manifest = load_build_manifest()
+    current_manifest = {}
+    current_segment_hashes = {}
+    segments_to_check = list(BUILD_SEGMENTS.keys())
     if only:
         segments_to_check = [s.strip() for s in only if s.strip() in BUILD_SEGMENTS]
 
-    for key in segments_to_check:
-        h = compute_segment_hash(key)
-        current_hashes[key] = h
-        if force or h is None or h != cached.get(key):
-            changed.append(key)
+    changelog_data = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "total_changed_files": 0,
+        "changed_segments": [],
+        "unchanged_segments": [],
+        "segments": {},
+    }
 
-    return changed, current_hashes
+    for seg_key in BUILD_SEGMENTS.keys():
+        if seg_key not in segments_to_check:
+            current_manifest[seg_key] = previous_manifest.get(seg_key, {})
+            current_segment_hashes[seg_key] = compute_segment_hash_from_files(current_manifest[seg_key])
+            changelog_data["unchanged_segments"].append(seg_key)
+            changelog_data["segments"][seg_key] = {
+                "status": "SKIPPED",
+                "description": BUILD_SEGMENTS[seg_key]["description"],
+                "added": [],
+                "modified": [],
+                "deleted": [],
+                "changed_count": 0,
+            }
+            continue
+
+        files_info = scan_segment_files(seg_key, previous_manifest)
+        current_manifest[seg_key] = files_info
+        seg_hash = compute_segment_hash_from_files(files_info)
+        current_segment_hashes[seg_key] = seg_hash
+
+        prev_files = previous_manifest.get(seg_key, {})
+        curr_files = files_info
+
+        added = sorted([p for p in curr_files if p not in prev_files])
+        modified = sorted([p for p in curr_files if p in prev_files and curr_files[p]["hash"] != prev_files[p]["hash"]])
+        deleted = sorted([p for p in prev_files if p not in curr_files])
+
+        changed_count = len(added) + len(modified) + len(deleted)
+        is_changed = force or changed_count > 0 or (not prev_files and files_info)
+
+        if is_changed:
+            changelog_data["changed_segments"].append(seg_key)
+            changelog_data["total_changed_files"] += changed_count
+            changelog_data["segments"][seg_key] = {
+                "status": "CHANGED",
+                "description": BUILD_SEGMENTS[seg_key]["description"],
+                "added": added,
+                "modified": modified,
+                "deleted": deleted,
+                "changed_count": changed_count,
+            }
+        else:
+            changelog_data["unchanged_segments"].append(seg_key)
+            changelog_data["segments"][seg_key] = {
+                "status": "OK",
+                "description": BUILD_SEGMENTS[seg_key]["description"],
+                "added": [],
+                "modified": [],
+                "deleted": [],
+                "changed_count": 0,
+            }
+
+    return changelog_data, current_manifest, current_segment_hashes
+
+
+def save_changelog_files(changelog_data):
+    """Save JSON changelog and Markdown report to .pmdot_cache."""
+    ensure_cache()
+    with open(BUILD_CHANGELOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(changelog_data, f, indent=2)
+
+    lines = [
+        f"# PMDoT Build Changelog — {changelog_data['timestamp']}",
+        "",
+        f"- **Changed Segments**: {len(changelog_data['changed_segments'])}",
+        f"- **Preserved Segments (Kept from cache)**: {len(changelog_data['unchanged_segments'])}",
+        f"- **Total Changed Files**: {changelog_data['total_changed_files']}",
+        "",
+    ]
+
+    if changelog_data["changed_segments"]:
+        lines.append("## Changed Segments")
+        lines.append("")
+        for seg in changelog_data["changed_segments"]:
+            info = changelog_data["segments"][seg]
+            lines.append(f"### `{seg}` — {info['description']} ({info['changed_count']} changed files)")
+            if info["added"]:
+                lines.append(f"**Added ({len(info['added'])}):**")
+                for f in info["added"]:
+                    lines.append(f"- `+ {f}`")
+            if info["modified"]:
+                lines.append(f"**Modified ({len(info['modified'])}):**")
+                for f in info["modified"]:
+                    lines.append(f"- `~ {f}`")
+            if info["deleted"]:
+                lines.append(f"**Deleted ({len(info['deleted'])}):**")
+                for f in info["deleted"]:
+                    lines.append(f"- `- {f}`")
+            lines.append("")
+
+    if changelog_data["unchanged_segments"]:
+        lines.append("## Preserved Segments (Kept from Previous Build)")
+        lines.append("")
+        for seg in changelog_data["unchanged_segments"]:
+            desc = BUILD_SEGMENTS[seg]["description"]
+            lines.append(f"- `{seg}`: {desc} *(preserved from previous build)*")
+        lines.append("")
+
+    with open(LAST_CHANGELOG_MD, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+
+def detect_changed_segments(force=False, only=None):
+    """Compatibility wrapper around detect_build_changelog."""
+    changelog_data, _, current_hashes = detect_build_changelog(force=force, only=only)
+    return changelog_data["changed_segments"], current_hashes
 
 
 def cmd_build(extra_args=None):
-    """Build PMDoT Engine with incremental segment detection."""
+    """Build PMDoT Engine with granular per-segment changelog tracking and incremental builds."""
     print_header("PMDoT Incremental Build System")
 
     if extra_args is None:
@@ -663,6 +851,7 @@ def cmd_build(extra_args=None):
 
     # Parse build flags
     force_build = "--force" in extra_args
+    separate_build = "--separate" in extra_args
     only_segments = None
 
     clean_args = []
@@ -671,57 +860,82 @@ def cmd_build(extra_args=None):
         if extra_args[i] == "--force":
             i += 1
             continue
-        elif extra_args[i] == "--only":
+        elif extra_args[i] == "--separate":
+            i += 1
+            continue
+        elif extra_args[i] == "--only" or extra_args[i] == "--part":
             if i + 1 < len(extra_args):
                 only_segments = extra_args[i + 1].split(",")
                 i += 2
                 continue
             else:
-                print_error("--only requires a comma-separated list of segments.")
+                print_error(f"{extra_args[i]} requires a comma-separated list of segments.")
                 print(f"  Available segments: {', '.join(BUILD_SEGMENTS.keys())}")
                 sys.exit(1)
         else:
             clean_args.append(extra_args[i])
         i += 1
 
-    # Detect changes
+    # Detect changes and generate per-segment changelog
     start_time = time.time()
-    print_info("Scanning source segments for changes...")
+    print_info("Scanning source segments and generating build changelog...")
 
-    changed, current_hashes = detect_changed_segments(force=force_build, only=only_segments)
-
+    changelog, current_manifest, current_hashes = detect_build_changelog(force=force_build, only=only_segments)
     scan_time = time.time() - start_time
 
-    # Report segment status
-    segments_to_show = only_segments if only_segments else BUILD_SEGMENTS.keys()
-    print(f"\n  {'Segment':<22} {'Status':<14} Description")
-    print(f"  {'─'*22} {'─'*14} {'─'*35}")
+    changed = changelog["changed_segments"]
+    total_changed_files = changelog["total_changed_files"]
+
+    # Report detailed segment status
+    segments_to_show = only_segments if only_segments else list(BUILD_SEGMENTS.keys())
+    print(f"\n  {'Segment':<20} {'Status':<12} {'Changed Files':<15} Description")
+    print(f"  {'─'*20} {'─'*12} {'─'*15} {'─'*35}")
     for key in segments_to_show:
         if key not in BUILD_SEGMENTS:
             continue
         seg = BUILD_SEGMENTS[key]
-        if key in changed:
-            status = f"{Colors.YELLOW}CHANGED{Colors.END}"
+        info = changelog["segments"].get(key, {})
+        status_str = info.get("status", "OK")
+        count_str = str(info.get("changed_count", 0))
+
+        if status_str == "CHANGED":
+            status_display = f"{Colors.YELLOW}CHANGED{Colors.END}"
+            count_display = f"{Colors.YELLOW}{count_str:<15}{Colors.END}"
+        elif status_str == "SKIPPED":
+            status_display = f"{Colors.DIM}SKIPPED{Colors.END}"
+            count_display = f"{Colors.DIM}{count_str:<15}{Colors.END}"
         else:
-            status = f"{Colors.GREEN}OK{Colors.END}"
-        print(f"  {key:<22} {status:<23} {seg['description']}")
+            status_display = f"{Colors.GREEN}OK{Colors.END}"
+            count_display = f"{Colors.GREEN}{count_str:<15}{Colors.END}"
 
-    print(f"\n  {Colors.DIM}Scan completed in {scan_time:.2f}s{Colors.END}")
+        print(f"  {key:<20} {status_display:<21} {count_display} {seg['description']}")
 
-    if not changed:
-        print(f"\n{Colors.GREEN}{Colors.BOLD}Build is up to date. No segments changed.{Colors.END}")
+        # Display changed files detail if segment changed
+        if status_str == "CHANGED":
+            for f in info.get("added", []):
+                print(f"    {Colors.GREEN}[+] Added:{Colors.END}    {f}")
+            for f in info.get("modified", []):
+                print(f"    {Colors.CYAN}[~] Modified:{Colors.END} {f}")
+            for f in info.get("deleted", []):
+                print(f"    {Colors.RED}[-] Deleted:{Colors.END}  {f}")
+
+    print(f"\n  {Colors.DIM}Scan completed in {scan_time:.2f}s ({total_changed_files} source files changed across segments){Colors.END}")
+
+    if not changed and not force_build:
+        print(f"\n{Colors.GREEN}{Colors.BOLD}Build is up to date. All segments preserved from previous build.{Colors.END}")
+        print(f"  Changelog: {Colors.DIM}{LAST_CHANGELOG_MD}{Colors.END}")
         print(f"  Use {Colors.CYAN}pmdot build --force{Colors.END} to force a full rebuild.")
         return
 
-    print(f"\n  {Colors.YELLOW}{len(changed)} segment(s) changed:{Colors.END} {', '.join(changed)}")
+    print(f"\n  {Colors.YELLOW}{len(changed)} segment(s) require build:{Colors.END} {', '.join(changed)}")
+    if changelog["unchanged_segments"]:
+        print(f"  {Colors.GREEN}Preserved segments (kept from previous build):{Colors.END} {', '.join(changelog['unchanged_segments'])}")
 
     if force_build:
         print(f"  {Colors.MAGENTA}--force{Colors.END} flag: full rebuild requested")
 
-    # Run SCons
-    print_header("Running SCons Build")
-
-    scons_cmd = [
+    # Base SCons command
+    base_scons = [
         "scons",
         f"platform={platform_target}",
         "target=editor",
@@ -729,24 +943,53 @@ def cmd_build(extra_args=None):
         "custom_modules=modules/pmdot_aseprite",
         "module_gdscript_enabled=no",
         "module_jsonrpc_enabled=no",
+        "vsprops=yes",
         "-j8",
     ]
-    scons_cmd.extend(clean_args)
-
-    print(f"  {Colors.DIM}$ {' '.join(scons_cmd)}{Colors.END}\n")
+    base_scons.extend(clean_args)
 
     build_start = time.time()
-    success = run_command(scons_cmd, cwd=GODOT_DIR, check=False)
+    build_success = True
+
+    # If --separate is requested or only specific segments are targeted:
+    if separate_build and changed:
+        print_header("Building Changed Segments Separately")
+        for seg_key in changed:
+            scons_target = BUILD_SEGMENTS[seg_key].get("scons_target")
+            if scons_target:
+                print(f"\n{Colors.BOLD}>>> Building separate segment: {seg_key} ({scons_target}) <<<{Colors.END}")
+                seg_cmd = list(base_scons) + [scons_target]
+                print(f"  {Colors.DIM}$ {' '.join(seg_cmd)}{Colors.END}\n")
+                if not run_command(seg_cmd, cwd=GODOT_DIR, check=False):
+                    build_success = False
+                    break
+
+        if build_success:
+            print(f"\n{Colors.BOLD}>>> Linking final PMDoT Engine binary <<<{Colors.END}")
+            print(f"  {Colors.DIM}$ {' '.join(base_scons)}{Colors.END}\n")
+            build_success = run_command(base_scons, cwd=GODOT_DIR, check=False)
+    else:
+        # Default incremental build: SCons uses its dependency database to compile
+        # ONLY the modified objects from the changed segments and link the binary
+        print_header("Running Incremental SCons Build")
+        print(f"  {Colors.DIM}$ {' '.join(base_scons)}{Colors.END}\n")
+        build_success = run_command(base_scons, cwd=GODOT_DIR, check=False)
+
     build_time = time.time() - build_start
 
-    if success:
-        # Update cache with current hashes
+    if build_success:
+        # Update cache, manifest and save changelog reports
+        save_build_manifest(current_manifest)
         cache = load_build_cache()
         cache.update(current_hashes)
         save_build_cache(cache)
-        print_success(f"PMDoT Engine build finished successfully! ({build_time:.1f}s)")
+        save_changelog_files(changelog)
+
+        print_success(f"PMDoT Engine build finished successfully in {build_time:.1f}s!")
+        print_info(f"Build changelog saved to: {LAST_CHANGELOG_MD}")
+        print_info(f"Structured changelog JSON: {BUILD_CHANGELOG_FILE}")
     else:
-        print_error(f"Build failed after {build_time:.1f}s. Segment cache NOT updated.")
+        print_error(f"Build failed after {build_time:.1f}s. Manifest and segment cache NOT updated.")
         print(f"  Fix the errors above, then run {Colors.CYAN}pmdot build{Colors.END} again.")
         sys.exit(1)
 
