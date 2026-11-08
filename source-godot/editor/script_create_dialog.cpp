@@ -441,6 +441,15 @@ void ScriptCreateDialog::_create_new() {
 
 void ScriptCreateDialog::_load_exist() {
 	String path = file_path->get_text();
+	if (language == nullptr) {
+		String lpath = ProjectSettings::get_singleton()->localize_path(path);
+		if (ScriptServer::edit_request_func) {
+			ScriptServer::edit_request_func(lpath);
+		}
+		hide();
+		return;
+	}
+
 	Ref<Resource> p_script = ResourceLoader::load(path, "Script");
 	if (p_script.is_null()) {
 		alert->set_text(vformat(TTR("Error loading script from %s"), path));

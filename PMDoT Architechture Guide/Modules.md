@@ -19,7 +19,8 @@ For in-depth technical details, see `architecture-guidelines/aseprite_architectu
 | Module | Status | Description | Notes |
 |---|---|---|---|
 | `gdscript` | 🗑️ | Legacy GDScript language (tokenizer, parser, analyzer, compiler, VM, LSP, templates) | Completely removed (~71 MB, 1,343 files). See `Changes.md` (CHG-002). |
-| `jsonrpc` | 🗑️ | JSON-RPC protocol implementation | Removed; sole consumer was GDScript language server protocol. |
+| `jsonrpc` | 🗑️ | JSON-RPC protocol implementation | Removed; sole consumer was GDScript language server protocol. See `Changes.md` (CHG-002). |
+| `webxr` | 🗑️ | WebXR OpenXR translation layer | Removed along with Web platform purge. See `Changes.md` (CHG-004). |
 | `mono` | 🔄 | C#/.NET engine integration (`module_mono_enabled=yes`) | Primary supported scripting language alongside native C++. |
 
 ---
@@ -35,15 +36,29 @@ For in-depth technical details, see `architecture-guidelines/aseprite_architectu
 | 3D Scene / Import | `csg`, `fbx`, `gltf`, `gridmap`, `lightmapper_rd`, `meshoptimizer`, `raycast`, `vhacd`, `xatlas_unwrap` |
 | Navigation / Math | `navigation`, `noise` |
 | Networking | `enet`, `mbedtls`, `multiplayer`, `upnp`, `webrtc`, `websocket` |
-| XR | `mobile_vr`, `openxr`, `webxr` |
+| XR | `mobile_vr`, `openxr` |
 | System Utilities | `camera`, `glslang`, `regex`, `zip` |
 
 > [!NOTE]
 > `websocket` is **retained** despite GDScript LSP removal, as it serves multiplayer networking, WebRTC signaling, and the remote debugger.
+> `webxr` has been **purged** following the complete removal of the Web platform.
 
 ---
 
-## 4. Module Registration Checklist
+## 4. Platform Modules (`source-godot/platform/`)
+
+| Platform | Status | Scope |
+|---|---|---|
+| `windows` | ✅ Active | Desktop Windows x86_64 / arm64 |
+| `linuxbsd` | ✅ Active | Desktop Linux / BSD x86_64 / arm64 |
+| `macos` | ✅ Active | Desktop macOS x86_64 / arm64 |
+| `android` | 🗑️ Purged | Completely removed (CHG-004) |
+| `ios` | 🗑️ Purged | Completely removed (CHG-004) |
+| `web` | 🗑️ Purged | Completely removed (CHG-004) |
+
+---
+
+## 5. Module Registration Checklist
 
 When creating a new module, add a record to Section 1 and log the change in `Changes.md`:
 

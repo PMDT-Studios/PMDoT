@@ -60,6 +60,11 @@ The build system tracks **10 source segments** via SHA256 hashes. Only changed c
 - Window stretch mode set to `canvas_items` and aspect ratio to `keep`.
 - Automatic `project.godot` generation with correct viewport and window override sizes.
 
+### 6. Desktop-Only Target Architecture & Multi-Language Scripting
+- **Dedicated Desktop Focus**: PMDoT targets desktop environments exclusively (**Windows**, **Linux**, and **macOS**). Mobile platforms (Android, iOS) and Web platforms (HTML5/WebAssembly) have been completely removed, eliminating export overhead, mobile-specific shaders, and bloated platform code.
+- **Modern Scripting Runtimes**: Standard gameplay scripts are authored in **C#** (`mono` module / .NET) and **C++** (GDExtension & native engine modules), with future native **Java** runtime support planned in the roadmap and **Markdown** supported for project docs. Legacy GDScript has been completely purged from the engine.
+- **Renderer Selection**: Simplified for desktop stability to **Forward+** (Vulkan) and **Compatibility** (OpenGL 3.3/GLES3). Legacy "Mobile" renderer options and overrides have been excised from the project creation workflow.
+
 ---
 
 ## PMDoT CLI Tool (`pmdot`)

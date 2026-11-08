@@ -763,12 +763,6 @@ def detect_darwin_sdk_path(platform, env):
     if platform == "macos":
         sdk_name = "macosx"
         var_name = "MACOS_SDK_PATH"
-    elif platform == "ios":
-        sdk_name = "iphoneos"
-        var_name = "IOS_SDK_PATH"
-    elif platform == "iossimulator":
-        sdk_name = "iphonesimulator"
-        var_name = "IOS_SDK_PATH"
     else:
         raise Exception("Invalid platform argument passed to detect_darwin_sdk_path")
 

@@ -3732,16 +3732,15 @@ void ScriptEditor::_help_search(const String &p_text) {
 }
 
 void ScriptEditor::_open_script_request(const String &p_path) {
-	Ref<Script> scr = ResourceLoader::load(p_path);
-	if (scr.is_valid()) {
-		script_editor->edit(scr, false);
-		return;
-	}
-
-	Ref<JSON> json = ResourceLoader::load(p_path);
-	if (json.is_valid()) {
-		script_editor->edit(json, false);
-		return;
+	List<String> extensions;
+	ResourceLoader::get_recognized_extensions_for_type("Script", &extensions);
+	ResourceLoader::get_recognized_extensions_for_type("JSON", &extensions);
+	if (extensions.find(p_path.get_extension())) {
+		Ref<Resource> scr = ResourceLoader::load(p_path);
+		if (scr.is_valid()) {
+			script_editor->edit(scr, false);
+			return;
+		}
 	}
 
 	Error err;

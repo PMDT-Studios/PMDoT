@@ -440,24 +440,17 @@ void ProjectDialog::_renderer_selected() {
 
 	if (renderer_type == "forward_plus") {
 		renderer_info->set_text(
-				String::utf8("•  ") + TTR("Supports desktop platforms only.") +
+				String::utf8("•  ") + TTR("Supports desktop platforms.") +
 				String::utf8("\n•  ") + TTR("Advanced 3D graphics available.") +
 				String::utf8("\n•  ") + TTR("Can scale to large complex scenes.") +
 				String::utf8("\n•  ") + TTR("Uses RenderingDevice backend.") +
 				String::utf8("\n•  ") + TTR("Slower rendering of simple scenes."));
-	} else if (renderer_type == "mobile") {
-		renderer_info->set_text(
-				String::utf8("•  ") + TTR("Supports desktop + mobile platforms.") +
-				String::utf8("\n•  ") + TTR("Less advanced 3D graphics.") +
-				String::utf8("\n•  ") + TTR("Less scalable for complex scenes.") +
-				String::utf8("\n•  ") + TTR("Uses RenderingDevice backend.") +
-				String::utf8("\n•  ") + TTR("Fast rendering of simple scenes."));
 	} else if (renderer_type == "gl_compatibility") {
 		renderer_info->set_text(
-				String::utf8("•  ") + TTR("Supports desktop, mobile + web platforms.") +
+				String::utf8("•  ") + TTR("Supports desktop platforms.") +
 				String::utf8("\n•  ") + TTR("Least advanced 3D graphics (currently work-in-progress).") +
 				String::utf8("\n•  ") + TTR("Intended for low-end/older devices.") +
-				String::utf8("\n•  ") + TTR("Uses OpenGL 3 backend (OpenGL 3.3/ES 3.0/WebGL2).") +
+				String::utf8("\n•  ") + TTR("Uses OpenGL 3 backend (OpenGL 3.3/ES 3.0).") +
 				String::utf8("\n•  ") + TTR("Fastest rendering of simple scenes."));
 	} else {
 		WARN_PRINT("Unknown renderer type. Please report this as a bug on GitHub.");
@@ -473,12 +466,14 @@ void ProjectDialog::ok_pressed() {
 	// Before we create a project, check that the target folder is empty.
 	// If not, we need to ask the user if they're sure they want to do this.
 	if (!is_folder_empty) {
-		ConfirmationDialog *cd = memnew(ConfirmationDialog);
-		cd->set_title(TTR("Warning: This folder is not empty"));
-		cd->set_text(TTR("You are about to create a Godot project in a non-empty folder.\nThe entire contents of this folder will be imported as project resources!\n\nAre you sure you wish to continue?"));
-		cd->get_ok_button()->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_nonempty_confirmation_ok_pressed));
-		get_parent()->add_child(cd);
-		cd->popup_centered();
+		if (!dialog_nonempty_warning) {
+			dialog_nonempty_warning = memnew(ConfirmationDialog);
+			dialog_nonempty_warning->set_title(TTR("Warning: This folder is not empty"));
+			dialog_nonempty_warning->set_text(TTR("You are about to create a Godot project in a non-empty folder.\nThe entire contents of this folder will be imported as project resources!\n\nAre you sure you wish to continue?"));
+			dialog_nonempty_warning->get_ok_button()->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_nonempty_confirmation_ok_pressed));
+			add_child(dialog_nonempty_warning);
+		}
+		dialog_nonempty_warning->popup_centered();
 		return;
 	}
 
@@ -497,8 +492,7 @@ void ProjectDialog::ok_pressed() {
 		ProjectSettings::CustomMap initial_settings;
 
 		// Be sure to change this code if/when renderers are changed.
-		// Default values are "forward_plus" for the main setting, "mobile" for the mobile override,
-		// and "gl_compatibility" for the web override.
+		// Default value is "forward_plus" for the main setting.
 		String renderer_type = renderer_button_group->get_pressed_button()->get_meta(SNAME("rendering_method"));
 		initial_settings["rendering/renderer/rendering_method"] = renderer_type;
 
@@ -507,12 +501,8 @@ void ProjectDialog::ok_pressed() {
 
 		if (renderer_type == "forward_plus") {
 			project_features.push_back("Forward Plus");
-		} else if (renderer_type == "mobile") {
-			project_features.push_back("Mobile");
 		} else if (renderer_type == "gl_compatibility") {
 			project_features.push_back("GL Compatibility");
-			// Also change the default rendering method for the mobile override.
-			initial_settings["rendering/renderer/rendering_method.mobile"] = "gl_compatibility";
 		} else {
 			WARN_PRINT("Unknown renderer type. Please report this as a bug on GitHub.");
 		}
@@ -914,6 +904,9 @@ ProjectDialog::ProjectDialog() {
 	String default_renderer_type = "forward_plus";
 	if (EditorSettings::get_singleton()->has_setting("project_manager/default_renderer")) {
 		default_renderer_type = EditorSettings::get_singleton()->get_setting("project_manager/default_renderer");
+		if (default_renderer_type != "forward_plus" && default_renderer_type != "gl_compatibility") {
+			default_renderer_type = "forward_plus";
+		}
 	}
 
 	Button *rs_button = memnew(CheckBox);
@@ -923,15 +916,6 @@ ProjectDialog::ProjectDialog() {
 	rs_button->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_renderer_selected));
 	rvb->add_child(rs_button);
 	if (default_renderer_type == "forward_plus") {
-		rs_button->set_pressed(true);
-	}
-	rs_button = memnew(CheckBox);
-	rs_button->set_button_group(renderer_button_group);
-	rs_button->set_text(TTR("Mobile"));
-	rs_button->set_meta(SNAME("rendering_method"), "mobile");
-	rs_button->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_renderer_selected));
-	rvb->add_child(rs_button);
-	if (default_renderer_type == "mobile") {
 		rs_button->set_pressed(true);
 	}
 	rs_button = memnew(CheckBox);
