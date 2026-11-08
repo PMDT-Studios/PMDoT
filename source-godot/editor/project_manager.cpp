@@ -338,7 +338,6 @@ void ProjectManager::_select_main_view(int p_id) {
 	main_view_toggle_map[current_main_view]->set_pressed_no_signal(true);
 	main_view_map[current_main_view]->set_visible(true);
 
-#ifndef ANDROID_ENABLED
 	if (current_main_view == MAIN_VIEW_PROJECTS && search_box->is_inside_tree()) {
 		// Automatically grab focus when the user moves from the Templates tab
 		// back to the Projects tab.
@@ -347,7 +346,6 @@ void ProjectManager::_select_main_view(int p_id) {
 
 	// The Templates tab's search field is focused on display in the asset
 	// library editor plugin code.
-#endif
 }
 
 void ProjectManager::_show_about() {

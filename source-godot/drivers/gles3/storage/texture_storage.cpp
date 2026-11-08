@@ -37,10 +37,6 @@
 #include "config.h"
 #include "utilities.h"
 
-#ifdef ANDROID_ENABLED
-#define glFramebufferTextureMultiviewOVR GLES3::Config::get_singleton()->eglFramebufferTextureMultiviewOVR
-#endif
-
 using namespace GLES3;
 
 TextureStorage *TextureStorage::singleton = nullptr;
@@ -583,29 +579,23 @@ Ref<Image> TextureStorage::_get_gl_image_and_format(const Ref<Image> &p_image, I
 			}
 		} break;
 		case Image::FORMAT_ETC2_RA_AS_RG: {
-#ifndef WEB_ENABLED
 			if (config->etc2_supported) {
 				r_gl_internal_format = _EXT_COMPRESSED_RGBA8_ETC2_EAC;
 				r_gl_format = GL_RGBA;
 				r_gl_type = GL_UNSIGNED_BYTE;
 				r_compressed = true;
-			} else
-#endif
-			{
+			} else {
 				need_decompress = true;
 			}
 			decompress_ra_to_rg = true;
 		} break;
 		case Image::FORMAT_DXT5_RA_AS_RG: {
-#ifndef WEB_ENABLED
 			if (config->s3tc_supported) {
 				r_gl_internal_format = _EXT_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				r_gl_format = GL_RGBA;
 				r_gl_type = GL_UNSIGNED_BYTE;
 				r_compressed = true;
-			} else
-#endif
-			{
+			} else {
 				need_decompress = true;
 			}
 			decompress_ra_to_rg = true;
@@ -1613,7 +1603,6 @@ void TextureStorage::_texture_set_3d_data(RID p_texture, const Vector<Ref<Image>
 }
 
 void TextureStorage::_texture_set_swizzle(GLES3::Texture *p_texture, Image::Format p_real_format) {
-#ifndef WEB_ENABLED
 	switch (p_texture->format) {
 		case Image::FORMAT_L8: {
 			if (RasterizerGLES3::is_gles_over_gl()) {
@@ -1661,7 +1650,6 @@ void TextureStorage::_texture_set_swizzle(GLES3::Texture *p_texture, Image::Form
 			glTexParameteri(p_texture->target, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
 		} break;
 	}
-#endif // WEB_ENABLED
 }
 
 Image::Format TextureStorage::texture_get_format(RID p_texture) const {
@@ -2042,13 +2030,9 @@ void TextureStorage::_update_render_target(RenderTarget *rt) {
 
 			GLES3::Utilities::get_singleton()->texture_allocated_data(rt->color, rt->size.x * rt->size.y * rt->view_count * rt->color_format_size, "Render target color texture");
 		}
-#ifndef IOS_ENABLED
 		if (use_multiview) {
 			glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, rt->color, 0, 0, rt->view_count);
 		} else {
-#else
-		{
-#endif
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target, rt->color, 0);
 		}
 
@@ -2075,13 +2059,9 @@ void TextureStorage::_update_render_target(RenderTarget *rt) {
 
 			GLES3::Utilities::get_singleton()->texture_allocated_data(rt->depth, rt->size.x * rt->size.y * rt->view_count * 3, "Render target depth texture");
 		}
-#ifndef IOS_ENABLED
 		if (use_multiview) {
 			glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, rt->depth, 0, 0, rt->view_count);
 		} else {
-#else
-		{
-#endif
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target, rt->depth, 0);
 		}
 
@@ -2216,13 +2196,9 @@ void GLES3::TextureStorage::check_backbuffer(RenderTarget *rt, const bool uses_s
 		glTexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#ifndef IOS_ENABLED
 		if (use_multiview) {
 			glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, rt->backbuffer, 0, 0, rt->view_count);
 		} else {
-#else
-		{
-#endif
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt->backbuffer, 0);
 		}
 	}
@@ -2240,13 +2216,9 @@ void GLES3::TextureStorage::check_backbuffer(RenderTarget *rt, const bool uses_s
 		glTexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#ifndef IOS_ENABLED
 		if (use_multiview) {
 			glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, rt->backbuffer_depth, 0, 0, rt->view_count);
 		} else {
-#else
-		{
-#endif
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, rt->backbuffer_depth, 0);
 		}
 	}

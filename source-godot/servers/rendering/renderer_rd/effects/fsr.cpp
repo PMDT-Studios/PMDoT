@@ -37,7 +37,7 @@ using namespace RendererRD;
 FSR::FSR() {
 	Vector<String> FSR_upscale_modes;
 
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED)
 	// MoltenVK does not support some of the operations used by the normal mode of FSR. Fallback works just fine though.
 	FSR_upscale_modes.push_back("\n#define MODE_FSR_UPSCALE_FALLBACK\n");
 #else

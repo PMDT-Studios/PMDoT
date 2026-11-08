@@ -2323,7 +2323,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		OS::get_singleton()->_verbose_stdout = GLOBAL_GET("debug/settings/stdout/verbose_stdout");
 	}
 
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED)
 	OS::get_singleton()->set_environment("MVK_CONFIG_LOG_LEVEL", OS::get_singleton()->_verbose_stdout ? "3" : "1"); // 1 = Errors only, 3 = Info
 #endif
 
@@ -2822,10 +2822,8 @@ Error Main::setup2(bool p_show_boot_logo) {
 
 	OS::get_singleton()->benchmark_end_measure("Startup", "Servers");
 
-#ifndef WEB_ENABLED
 	// Add a blank line for readability.
 	Engine::get_singleton()->print_header("");
-#endif // WEB_ENABLED
 
 	register_core_singletons();
 
@@ -3096,11 +3094,7 @@ Error Main::setup2(bool p_show_boot_logo) {
 void Main::setup_boot_logo() {
 	MAIN_PRINT("Main: Load Boot Image");
 
-#if !defined(TOOLS_ENABLED) && defined(WEB_ENABLED)
-	bool show_logo = false;
-#else
 	bool show_logo = true;
-#endif
 
 	if (show_logo) { //boot logo!
 		const bool boot_logo_image = GLOBAL_DEF_BASIC("application/boot_splash/show_image", true);
@@ -3189,7 +3183,6 @@ int Main::start() {
 	String _export_preset;
 	bool export_debug = false;
 	bool export_pack_only = false;
-	bool install_android_build_template = false;
 #ifndef DISABLE_DEPRECATED
 	bool converting_project = false;
 	bool validating_converting_project = false;
@@ -3222,8 +3215,6 @@ int Main::start() {
 			editor = true;
 		} else if (E->get() == "-p" || E->get() == "--project-manager") {
 			project_manager = true;
-		} else if (E->get() == "--install-android-build-template") {
-			install_android_build_template = true;
 #endif // TOOLS_ENABLED
 		} else if (E->get().length() && E->get()[0] != '-' && positional_arg.is_empty()) {
 			positional_arg = E->get();
@@ -3635,7 +3626,7 @@ int Main::start() {
 			sml->get_root()->add_child(editor_node);
 
 			if (!_export_preset.is_empty()) {
-				editor_node->export_preset(_export_preset, positional_arg, export_debug, export_pack_only, install_android_build_template);
+				editor_node->export_preset(_export_preset, positional_arg, export_debug, export_pack_only);
 				game_path = ""; // Do not load anything.
 			}
 

@@ -709,6 +709,23 @@ def save_build_manifest(manifest):
         json.dump(manifest, f, indent=2)
 
 
+def get_target_binary_path():
+    """Return the absolute path of the compiled editor binary if it exists."""
+    os_name = get_os_platform()
+    bin_dir = os.path.join(GODOT_DIR, "bin")
+    if os_name == "windows":
+        p = os.path.join(bin_dir, "godot.windows.editor.x86_64.exe")
+    elif os_name == "linux":
+        p = os.path.join(bin_dir, "godot.linuxbsd.editor.x86_64")
+    elif os_name == "macos":
+        p = os.path.join(bin_dir, "godot.macos.editor.x86_64")
+    else:
+        p = None
+    if p and os.path.exists(p):
+        return p
+    return None
+
+
 def detect_build_changelog(force=False, only=None):
     """
     Scans files per segment, compares against the last build manifest,
@@ -720,6 +737,10 @@ def detect_build_changelog(force=False, only=None):
     segments_to_check = list(BUILD_SEGMENTS.keys())
     if only:
         segments_to_check = [s.strip() for s in only if s.strip() in BUILD_SEGMENTS]
+
+    target_bin = get_target_binary_path()
+    bin_exists = target_bin is not None
+    bin_mtime = os.path.getmtime(target_bin) if bin_exists else 0
 
     changelog_data = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -757,7 +778,8 @@ def detect_build_changelog(force=False, only=None):
         deleted = sorted([p for p in prev_files if p not in curr_files])
 
         changed_count = len(added) + len(modified) + len(deleted)
-        is_changed = force or changed_count > 0 or (not prev_files and files_info)
+        has_newer_source = any(info.get("mtime", 0) > bin_mtime for info in curr_files.values()) if bin_exists else True
+        is_changed = force or changed_count > 0 or (not prev_files and files_info) or not bin_exists or has_newer_source
 
         if is_changed:
             changelog_data["changed_segments"].append(seg_key)

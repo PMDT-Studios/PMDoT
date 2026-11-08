@@ -3277,13 +3277,11 @@ void FileSystemDock::_file_and_folders_fill_popup(PopupMenu *p_popup, const Vect
 			}
 		}
 
-#if !defined(ANDROID_ENABLED) && !defined(WEB_ENABLED)
 		if (!added_separator) {
 			p_popup->add_separator();
 			added_separator = true;
 		}
 
-		// Opening the system file manager is not supported on the Android and web editors.
 		const bool is_directory = fpath.ends_with("/");
 
 		p_popup->add_icon_shortcut(get_editor_theme_icon(SNAME("Terminal")), ED_GET_SHORTCUT("filesystem_dock/open_in_terminal"), FILE_OPEN_IN_TERMINAL);
@@ -3295,7 +3293,6 @@ void FileSystemDock::_file_and_folders_fill_popup(PopupMenu *p_popup, const Vect
 
 		p_popup->add_icon_shortcut(get_editor_theme_icon(SNAME("Filesystem")), ED_GET_SHORTCUT("filesystem_dock/show_in_explorer"), FILE_SHOW_IN_EXPLORER);
 		p_popup->set_item_text(p_popup->get_item_index(FILE_SHOW_IN_EXPLORER), is_directory ? TTR("Open in File Manager") : TTR("Show in File Manager"));
-#endif
 
 		current_path = fpath;
 	}
@@ -3335,12 +3332,9 @@ void FileSystemDock::_tree_empty_click(const Vector2 &p_pos, MouseButton p_butto
 	tree_popup->add_icon_item(get_editor_theme_icon(SNAME("Script")), TTR("New Script..."), FILE_NEW_SCRIPT);
 	tree_popup->add_icon_item(get_editor_theme_icon(SNAME("Object")), TTR("New Resource..."), FILE_NEW_RESOURCE);
 	tree_popup->add_icon_item(get_editor_theme_icon(SNAME("TextFile")), TTR("New TextFile..."), FILE_NEW_TEXTFILE);
-#if !defined(ANDROID_ENABLED) && !defined(WEB_ENABLED)
-	// Opening the system file manager is not supported on the Android and web editors.
 	tree_popup->add_separator();
 	tree_popup->add_icon_shortcut(get_editor_theme_icon(SNAME("Terminal")), ED_GET_SHORTCUT("filesystem_dock/open_in_terminal"), FILE_OPEN_IN_TERMINAL);
 	tree_popup->add_icon_shortcut(get_editor_theme_icon(SNAME("Filesystem")), ED_GET_SHORTCUT("filesystem_dock/show_in_explorer"), FILE_SHOW_IN_EXPLORER);
-#endif
 
 	tree_popup->set_position(tree->get_screen_position() + p_pos);
 	tree_popup->reset_size();
@@ -3899,12 +3893,9 @@ FileSystemDock::FileSystemDock() {
 	ED_SHORTCUT("filesystem_dock/delete", TTR("Delete"), Key::KEY_DELETE);
 	ED_SHORTCUT("filesystem_dock/rename", TTR("Rename..."), Key::F2);
 	ED_SHORTCUT_OVERRIDE("filesystem_dock/rename", "macos", Key::ENTER);
-#if !defined(ANDROID_ENABLED) && !defined(WEB_ENABLED)
-	// Opening the system file manager or opening in an external program is not supported on the Android and web editors.
 	ED_SHORTCUT("filesystem_dock/show_in_explorer", TTR("Open in File Manager"));
 	ED_SHORTCUT("filesystem_dock/open_in_external_program", TTR("Open in External Program"));
 	ED_SHORTCUT("filesystem_dock/open_in_terminal", TTR("Open in Terminal"));
-#endif
 
 	// Properly translating color names would require a separate HashMap, so for simplicity they are provided as comments.
 	folder_colors["red"] = Color(1.0, 0.271, 0.271); // TTR("Red")

@@ -139,11 +139,8 @@ doc_classes/*                       @godotengine/documentation
 
 # Platform
 
-/platform/android/                  @godotengine/android
-/platform/ios/                      @godotengine/ios
 /platform/linuxbsd/                 @godotengine/linux-bsd
 /platform/macos/                    @godotengine/macos
-/platform/web/                      @godotengine/web
 /platform/windows/                  @godotengine/windows
 
 # Scene

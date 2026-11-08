@@ -1156,7 +1156,6 @@ bool OpenXRInterface::pre_draw_viewport(RID p_render_target) {
 Vector<BlitToScreen> OpenXRInterface::post_draw_viewport(RID p_render_target, const Rect2 &p_screen_rect) {
 	Vector<BlitToScreen> blit_to_screen;
 
-#ifndef ANDROID_ENABLED
 	// If separate HMD we should output one eye to screen
 	if (p_screen_rect != Rect2()) {
 		BlitToScreen blit;
@@ -1182,7 +1181,6 @@ Vector<BlitToScreen> OpenXRInterface::post_draw_viewport(RID p_render_target, co
 		blit.dst_rect = dst_rect;
 		blit_to_screen.push_back(blit);
 	}
-#endif
 
 	if (openxr_api) {
 		openxr_api->post_draw_viewport(p_render_target);
