@@ -2,16 +2,23 @@ name: Build PMDOT
 
 on:
   pull_request: 
-    types: [opened]
-
+    types: [opened, synchronize, reopened]
+    
+permissions:
+  contents: read
+  
 jobs:
   run-build:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+          
       - name: Updating the system
         run: |
           sudo apt-get update
+          
       - name: Installing dependencies
         #Everything from godot doc
         run: |
@@ -31,6 +38,7 @@ jobs:
           libxi-dev \
           libxrandr-dev \
           libwayland-dev
+          
       - name: Build PMDoT
         run: python3 pmdot.py build
         
