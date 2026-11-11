@@ -17,12 +17,20 @@ jobs:
           BRANCH: ${{ github.event.pull_request.head.ref }}
           MSG: ${{ github.event.pull_request.title }}
           ACTOR: ${{ github.event.pull_request.user.login }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           URL=$(printf '%s' "$URL_GOOGLE_CHAT" | tr -d '[:space:]"')
 
-          TEXT=$(printf 'Organização onde o PR foi aberto: *%s*\n\nRepositório: *%s*\n\nBranch: *%s*\n\nTítulo do PR: *%s*\n\nAutor: *%s*' \
-            "$ORG" "$REPO" "$BRANCH" "$MSG" "$ACTOR")
+          if [ "$IS_DRAFT" = "true" ]; then
+            STATUS="O PR está em DRAFT"
+          else
+            STATUS="O PR está pronto para revisão"
+          fi
 
+          TEXT=$(printf 'Organização onde o PR foi aberto: *%s*\n\nRepositório: *%s*\n\nBranch: *%s*\n\nTítulo do PR: *%s*\n\nAutor: *%s*\n\n%s\n\nLink para o PR: %s' \
+            "$ORG" "$REPO" "$BRANCH" "$MSG" "$ACTOR" "$STATUS" "$PR_URL")
+          
           jq -n --arg text "$TEXT" '{text: $text}' \
           | curl -fsS -X POST "$URL" \
               -H "Content-Type: application/json" \
