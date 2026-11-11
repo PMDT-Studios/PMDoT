@@ -1,11 +1,50 @@
-name: GCHAT
+name: Build PMDOT
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, reopened]
+
+permissions:
+  contents: read
 
 jobs:
+  run-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Updating the system
+        run: |
+          sudo apt-get update
+
+      - name: Installing dependencies
+        # Everything from godot doc
+        run: |
+          sudo apt-get install -y \
+          build-essential \
+          g++-11 \
+          scons \
+          pkg-config \
+          libx11-dev \
+          libxcursor-dev \
+          libxinerama-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libasound2-dev \
+          libpulse-dev \
+          libudev-dev \
+          libxi-dev \
+          libxrandr-dev \
+          libwayland-dev
+
+      - name: Build PMDoT
+        run: python3 pmdot.py build
+
   notify:
+    needs: run-build
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
 
     steps:
