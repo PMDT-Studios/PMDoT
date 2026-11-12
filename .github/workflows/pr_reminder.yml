@@ -1,0 +1,106 @@
+name: PR Review Inactivity Reminder
+
+on:
+  schedule:
+    # Runs every 2 hours to check for stale/unreviewed PRs
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Allows manual trigger from Actions tab
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  check-inactive-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check unreviewed PRs without commits in last 12h
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL_GOOGLE_CHAT: ${{ secrets.GOOGLE_CHAT_URL }}
+        run: |
+          python3 - << 'EOF'
+          import os
+          import sys
+          import json
+          import subprocess
+          import urllib.request
+          from datetime import datetime, timezone
+
+          webhook_url = os.environ.get("URL_GOOGLE_CHAT", "").strip()
+          if not webhook_url:
+              print("URL_GOOGLE_CHAT is not configured. Skipping.")
+              sys.exit(0)
+
+          cmd = [
+              "gh", "pr", "list",
+              "--state", "open",
+              "--json", "number,title,author,headRefName,url,isDraft,reviews,commits"
+          ]
+          res = subprocess.run(cmd, capture_output=True, text=True)
+          if res.returncode != 0:
+              print(f"Error fetching PRs: {res.stderr}")
+              sys.exit(res.returncode)
+
+          prs = json.loads(res.stdout)
+          now = datetime.now(timezone.utc)
+          reminders_sent = 0
+
+          for pr in prs:
+              if pr.get("isDraft"):
+                  continue
+
+              reviews = pr.get("reviews", [])
+              # Considered reviewed if approved or changes requested
+              has_review = any(r.get("state") in ["APPROVED", "CHANGES_REQUESTED"] for r in reviews)
+              if has_review:
+                  continue
+
+              commits = pr.get("commits", [])
+              if not commits:
+                  continue
+
+              latest_commit = commits[-1]
+              committed_date_str = latest_commit.get("committedDate")
+              if not committed_date_str:
+                  continue
+
+              committed_date = datetime.fromisoformat(committed_date_str.replace("Z", "+00:00"))
+              diff_hours = (now - committed_date).total_seconds() / 3600.0
+
+              if diff_hours >= 12.0:
+                  hours_int = int(diff_hours)
+                  pr_number = pr.get("number")
+                  pr_title = pr.get("title")
+                  pr_branch = pr.get("headRefName")
+                  pr_author = pr.get("author", {}).get("login", "unknown")
+                  pr_url = pr.get("url")
+
+                  text = (
+                      f"⏰ *Lembrete: PR pendente de revisão há mais de 12 horas*\n\n"
+                      f"• *PR:* #{pr_number} - {pr_title}\n"
+                      f"• *Autor:* {pr_author}\n"
+                      f"• *Branch:* {pr_branch}\n"
+                      f"• *Último commit há:* ~{hours_int} horas\n"
+                      f"• *Link:* {pr_url}\n\n"
+                      f"Este PR ainda não foi revisado. Por favor, realizem a revisão!"
+                  )
+
+                  payload = json.dumps({"text": text}).encode("utf-8")
+                  req = urllib.request.Request(
+                      webhook_url,
+                      data=payload,
+                      headers={"Content-Type": "application/json"}
+                  )
+                  try:
+                      with urllib.request.urlopen(req) as response:
+                          print(f"Notification sent for PR #{pr_number}: HTTP {response.status}")
+                          reminders_sent += 1
+                  except Exception as e:
+                      print(f"Failed to send notification for PR #{pr_number}: {e}")
+
+          print(f"Total reminders sent: {reminders_sent}")
+          EOF

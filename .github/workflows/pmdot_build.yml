@@ -2,7 +2,7 @@ name: Build PMDOT
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -47,7 +47,7 @@ jobs:
 
   notify:
     needs: run-build
-    if: github.event.action == 'opened'
+    if: github.event.action == 'opened' || github.event.action == 'reopened'
     runs-on: ubuntu-latest
 
     steps:
