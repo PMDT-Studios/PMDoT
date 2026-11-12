@@ -965,9 +965,10 @@ def cmd_build(extra_args=None):
         "custom_modules=modules/pmdot_aseprite",
         "module_gdscript_enabled=no",
         "module_jsonrpc_enabled=no",
-        "vsprops=yes",
         "-j8",
     ]
+    if platform_target == "windows":
+        base_scons.append("vsproj=yes")
     base_scons.extend(clean_args)
 
     build_start = time.time()
