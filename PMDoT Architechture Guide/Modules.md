@@ -9,6 +9,7 @@ Status Key: ✅ Active · 🟣 Custom PMDoT · ⛔ Disabled · 🗑️ Purged / 
 | Module | Status | Description | Key Files |
 |---|---|---|---|
 | `pmdot_aseprite` | 🟣 ✅ | Embedded native Aseprite workspace in the editor, real-time SIMD pixel conversion pipeline, and Pixel Art presets | `register_types.cpp`, `pmdot_pixel_pipeline.cpp/.h`, `editor/aseprite_workspace.cpp/.h`, `editor/pixel_art_presets.cpp/.h`, `thirdparty/aseprite` |
+| `pmdot_reactui` | 🟣 ⛔ | Embedded native React as a language for UI creation | `register_types.cpp`, `src/js_bindings.cpp/.h`, `src/react_ui.cpp/.h`, `src/js_runtime.cpp/.h` |
 
 For in-depth technical details, see `architecture-guidelines/aseprite_architecture_guide.md`.
 
