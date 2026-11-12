@@ -970,9 +970,10 @@ def cmd_build(extra_args=None):
         "custom_modules=modules/pmdot_aseprite",
         "module_gdscript_enabled=no",
         "module_jsonrpc_enabled=no",
-        "vsprops=yes",
         "-j8",
     ]
+    if platform_target == "windows":
+        base_scons.append("vsproj=yes")
     base_scons.extend(clean_args)
 
     build_start = time.time()
@@ -1072,8 +1073,23 @@ def cmd_install():
             print_success("GCC / G++ compilers detected")
         else:
             print_warning(
-                "Run: sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev"
+                "Compilers missing. Run: sudo apt-get install -y build-essential pkg-config"
             )
+        linux_tools = [
+            ("pkg-config", "pkg-config"),
+            ("wayland-scanner", "libwayland-bin"),
+        ]
+        missing_tools = [pkg for tool, pkg in linux_tools if not shutil.which(tool)]
+        if missing_tools:
+            print_warning(f"Missing Linux build dependencies: {', '.join(missing_tools)}")
+            print_info(
+                "Install with: sudo apt-get update && sudo apt-get install -y build-essential scons pkg-config "
+                "libx11-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev libglu1-mesa-dev "
+                "libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev "
+                "libwayland-dev libwayland-bin libxkbcommon-dev libdbus-1-dev libfontconfig1-dev"
+            )
+        else:
+            print_success("Linux display & platform build dependencies detected")
 
     elif os_name == "macos":
         if shutil.which("clang"):

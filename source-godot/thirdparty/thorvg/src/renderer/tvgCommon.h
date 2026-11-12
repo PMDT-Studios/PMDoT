@@ -23,6 +23,7 @@
 #ifndef _TVG_COMMON_H_
 #define _TVG_COMMON_H_
 
+#include <cstdint>
 #include "config.h"
 #include "thorvg.h"
 

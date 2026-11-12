@@ -15,23 +15,19 @@
 #include "platform.h"
 
 /* define isa namespace and ISA bitvector */
-#if defined (__AVX512VL__)
+#if defined(EMBREE_TARGET_AVX512) && defined (__AVX512VL__)
 #  define isa avx512
 #  define ISA AVX512
 #  define ISA_STR "AVX512"
-#elif defined (__AVX2__)
+#elif defined(EMBREE_TARGET_AVX2) && defined (__AVX2__)
 #  define isa avx2
 #  define ISA AVX2
 #  define ISA_STR "AVX2"
-#elif defined(__AVXI__)
-#  define isa avxi
-#  define ISA AVXI
-#  define ISA_STR "AVXI"
-#elif defined(__AVX__)
+#elif defined(EMBREE_TARGET_AVX) && defined(__AVX__)
 #  define isa avx
 #  define ISA AVX
 #  define ISA_STR "AVX"
-#elif defined (__SSE4_2__)
+#elif defined(EMBREE_TARGET_SSE42) && defined (__SSE4_2__)
 #  define isa sse42
 #  define ISA SSE42
 #  define ISA_STR "SSE4.2"
