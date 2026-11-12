@@ -80,7 +80,7 @@ jobs:
                   pr_url = pr.get("url")
 
                   text = (
-                      f"⏰ *Lembrete: PR pendente de revisão há mais de 12 horas*\n\n"
+                      f" *Lembrete: PR pendente de revisão há mais de 12 horas*\n\n"
                       f"• *PR:* #{pr_number} - {pr_title}\n"
                       f"• *Autor:* {pr_author}\n"
                       f"• *Branch:* {pr_branch}\n"
