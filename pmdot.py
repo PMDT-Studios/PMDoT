@@ -580,6 +580,11 @@ BUILD_SEGMENTS = {
         "scons_target": "modules/pmdot_aseprite",
         "description": "PMDoT Aseprite Module",
     },
+    "pmdot_reactui": {
+        "path": os.path.join("modules", "pmdot_reactui"),
+        "scons_target": "modules/pmdot_reactui",
+        "description": "PMDoT ReactUI Module"
+    },
 }
 
 SOURCE_EXTENSIONS = {".cpp", ".c", ".h", ".hpp", ".py", ".inc", ".glsl"}

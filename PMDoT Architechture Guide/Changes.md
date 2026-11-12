@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-11-12 · CHG-005 · Added React support for building UI in Godot · `IN PROGRESS`
+
+**Reason:** PMDoT introduces React as a declarative UI development layer, allowing developers to build and manage user interfaces using JSX/TSX instead of manually constructing UI nodes through code. By integrating QuickJS as JavaScript runtime and implementing a custom React Renderer, React components are converting into native C++ Ui Tree managed by PMDoT.   
+  
+**Execution Scope (by Subsystem):**
+
+| Subsystem | Status | Modification |
+|---|---|---|
+| React Base Components | ✅ | Implemented five foundational React components: `Text`, `Image`, `View`, `CustomShader`, and `Scroll`. |
+| C++ Core Structure | ✅ | Created the foundational C++ source files for the UI system. |
+| Third-Party Dependencies | ✅ | Integrated esbuild for TSX bundling, QuickJS as the JavaScript runtime, and React with React Reconciler. |
+| Custom React Renderer | ⏳ | Implement a custom React Renderer and establish communication with the native C++ layer. |
+| Native UI Tree Implementation | ⏳ | Implement the C++ logic responsible for creating and managing the native UI tree. |
+| Godot Rendering Integration | ⏳ | Integrate the UI tree with Godot's `TextServer` and `RenderingServer` APIs. |
+
+---
+
 ## 2026-11-07 · CHG-004 · Complete Removal of Mobile (Android, iOS) & Web Platforms · `COMPLETED`
 
 **Reason:** PMDoT is strictly a desktop-oriented game engine optimized for high-performance Pixel Art development. Mobile targets (Android, iOS) and Web (HTML5/WebAssembly) added extreme maintenance overhead, thousands of platform files, external toolchain dependencies (Gradle, NDK, Xcode, Emscripten), and complex preprocessor branches across core and rendering drivers. Their elimination dramatically reduces codebase surface area, cuts compilation time, and simplifies reviewer cognitive load.
