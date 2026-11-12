@@ -58,27 +58,22 @@ flowchart TD
 --- 
 
 
-## 2. Native React components:
+## 2. Native React Components
 
-```text
-###View
-  **Props: width, height, backgroundColor, padding, margin, gap, direction, align, justify, children.
+### View
+**Props:** `width`, `height`, `backgroundColor`, `padding`, `margin`, `gap`, `direction`, `align`, `justify`, `children`.
 
-###Text
-  **Props: color, fontSize, fontFamily, fontWeight, textAlign, children.
+### Text
+**Props:** `color`, `fontSize`, `fontFamily`, `fontWeight`, `textAlign`, `children`.
 
-###Scroll
-  **Props: width, height, direction, scrollX, scrollY, scrollbarVisible, children.
+### Scroll
+**Props:** `width`, `height`, `direction`, `scrollX`, `scrollY`, `scrollbarVisible`, `children`.
 
-###Image
-  **Props: source, width, height, fit, opacity.
+### Image
+**Props:** `source`, `width`, `height`, `fit`, `opacity`.
 
-###CustomShader
-  **Props: shader, uniforms, children
-
-```
-
----
+### CustomShader
+**Props:** `shader`, `uniforms`, `children`.
 
 ## 3. Data Flow: From TSX to Screen
 
