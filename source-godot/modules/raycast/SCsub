@@ -67,7 +67,7 @@ if env["builtin_embree"]:
 
     if not env.msvc:
         if env["arch"] in ["x86_64", "x86_32"]:
-            env_raycast.Append(CCFLAGS=["-msse2", "-mxsave"])
+            env_raycast.Append(CCFLAGS=["-msse2", "-mxsave", "-mno-avx", "-mno-avx2", "-mno-avx512f"])
 
         if env["platform"] == "windows":
             env_raycast.Append(CCFLAGS=["-mstackrealign"])

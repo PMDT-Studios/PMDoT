@@ -22,6 +22,11 @@ RUN apt-get update && apt-get install -y \
     libudev-dev \
     libxi-dev \
     libxrandr-dev \
+    libwayland-dev \
+    libwayland-bin \
+    libxkbcommon-dev \
+    libdbus-1-dev \
+    libfontconfig1-dev \
     yasm \
     nasm \
     && rm -rf /var/lib/apt/lists/*
