@@ -104,3 +104,4 @@ jobs:
 
           print(f"Total reminders sent: {reminders_sent}")
           EOF
+
