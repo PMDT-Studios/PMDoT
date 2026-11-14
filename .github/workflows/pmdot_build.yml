@@ -45,7 +45,11 @@ jobs:
       - name: github-cache
         uses: actions/cache@v4
         with:
-          path: .pmdot_cache
+          path: |
+            .pmdot_cache
+            source-godot/bin
+            .scons_cache
+            .sconsign*.dblite
           key: pmdot-cache-${{ github.sha }}
           restore-keys: pmdot-cache
         
