@@ -1,9 +1,9 @@
-short_name = "godot"
-name = "Godot Engine"
-major = 4
-minor = 3
+short_name = "pmdot"
+name = "PMDoT"
+major = 1
+minor = 0
 patch = 0
 status = "stable"
 module_config = ""
 website = "https://godotengine.org"
-docs = "4.3"
+docs = "1.0"
