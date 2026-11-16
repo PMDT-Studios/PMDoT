@@ -3,6 +3,7 @@
 Import("env")
 
 env_vscode = env.Clone()
+env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/editor"])
 
 sources = [
     "register_types.cpp",

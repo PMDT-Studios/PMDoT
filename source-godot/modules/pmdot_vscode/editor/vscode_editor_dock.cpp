@@ -178,7 +178,7 @@ PMDoTVSCodeEditorPlugin::PMDoTVSCodeEditorPlugin() {
 	VSCodeLSPManager::register_editor_settings();
 	dock = memnew(VSCodeEditorDock);
 	dock->hide();
-	EditorNode::get_singleton()->get_editor_main_screen()->get_control()->add_child(dock);
+	EditorNode::get_singleton()->get_main_screen_control()->add_child(dock);
 }
 
 PMDoTVSCodeEditorPlugin::~PMDoTVSCodeEditorPlugin() {
