@@ -9,6 +9,7 @@
 #include "editor/plugins/editor_plugin.h"
 #include "lsp/vscode_lsp_manager.h"
 #include "platform/webview_backend.h"
+#include "profiler/vscode_codelens_profiler.h"
 #include "vscode_bridge.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/control.h"
@@ -26,6 +27,7 @@ private:
 	VSCodeDAPClient dap_client;
 	VSCodeTestRunner test_runner;
 	VSCodeDiagnosticHub diagnostic_hub;
+	VSCodeCodeLensProfiler perf_profiler;
 	bool prewarmed = false;
 
 	void _ensure_backend_initialized();
