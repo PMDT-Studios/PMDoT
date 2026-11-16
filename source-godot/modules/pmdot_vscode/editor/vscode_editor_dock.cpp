@@ -59,6 +59,7 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 		backend->set_visible(is_visible_in_tree());
 		bridge.attach(backend);
 		lsp_manager.attach(backend);
+		dap_client.attach(backend);
 		bridge.set_dirty_callback([this](const String &p_path, bool p_dirty) {
 			if (status_label) {
 				String marker = p_dirty ? " *" : "";

@@ -3,6 +3,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "debugger/vscode_dap_client.h"
 #include "editor/plugins/editor_plugin.h"
 #include "lsp/vscode_lsp_manager.h"
 #include "platform/webview_backend.h"
@@ -20,6 +21,7 @@ private:
 	WebViewBackend *backend = nullptr;
 	VSCodeBridge bridge;
 	VSCodeLSPManager lsp_manager;
+	VSCodeDAPClient dap_client;
 	bool prewarmed = false;
 
 	void _ensure_backend_initialized();
