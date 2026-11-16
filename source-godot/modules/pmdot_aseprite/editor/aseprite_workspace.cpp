@@ -524,6 +524,7 @@ void EditorAsepriteWorkspace::unhandled_key_input(const Ref<InputEvent> &p_event
 void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) {
 	Ref<InputEventMouseButton> mb = p_event;
 	Ref<InputEventMouseMotion> mm = p_event;
+	Ref<InputEventMouseButton> mz = p_event;
 
 	if (mb.is_valid() && mb->get_button_index() == MouseButton::LEFT) {
 		if (mb->is_pressed()) {
@@ -562,6 +563,18 @@ void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) 
 			}
 			last_mouse_px = Vector2i(px, py);
 			update_canvas_texture();
+		}
+	} else if (mz.is_valid() && mz->is_pressed()) {
+		if (mz->get_button_index() == MouseButton::WHEEL_UP) {
+			_on_zoom_in();
+			accept_event();
+			return;
+		}
+
+		if (mz->get_button_index() == MouseButton::WHEEL_DOWN) {
+			_on_zoom_out();
+			accept_event();
+			return;
 		}
 	}
 }
