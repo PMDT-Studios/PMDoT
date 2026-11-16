@@ -13,6 +13,7 @@ if env.editor_build:
         "editor/vscode_editor_dock.cpp",
         "editor/vscode_bridge.cpp",
         "editor/lsp/vscode_lsp_manager.cpp",
+        "editor/debugger/vscode_dap_client.cpp",
         "editor/platform/webview_windows.cpp",
         "editor/platform/webview_posix.cpp",
     ]
