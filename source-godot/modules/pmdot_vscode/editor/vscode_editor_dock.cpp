@@ -3,6 +3,7 @@
 #include "vscode_editor_dock.h"
 
 #include "core/io/dir_access.h"
+#include "core/object/script_language.h"
 #include "editor/editor_node.h"
 #include "scene/main/window.h"
 #include "servers/display_server.h"
@@ -56,6 +57,13 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 	Rect2i bounds(rect.position.x, rect.position.y, MAX(1, rect.size.x), MAX(1, rect.size.y));
 	if (backend->initialize(native_handle, bounds)) {
 		backend->set_visible(is_visible_in_tree());
+		bridge.attach(backend);
+		bridge.set_dirty_callback([this](const String &p_path, bool p_dirty) {
+			if (status_label) {
+				String marker = p_dirty ? " *" : "";
+				status_label->set_text("PMDoT VS Code IDE | " + p_path + marker);
+			}
+		});
 		prewarmed = true;
 	}
 }
@@ -87,6 +95,14 @@ void VSCodeEditorDock::set_ide_visible(bool p_visible) {
 	}
 }
 
+bool VSCodeEditorDock::open_script(const String &p_res_path) {
+	_ensure_backend_initialized();
+	if (status_label) {
+		status_label->set_text("PMDoT VS Code IDE | " + p_res_path);
+	}
+	return bridge.open_file(p_res_path);
+}
+
 VSCodeEditorDock::VSCodeEditorDock() {
 	set_v_size_flags(SIZE_EXPAND_FILL);
 	set_h_size_flags(SIZE_EXPAND_FILL);
@@ -116,6 +132,17 @@ PMDoTVSCodeEditorPlugin::PMDoTVSCodeEditorPlugin() {
 }
 
 PMDoTVSCodeEditorPlugin::~PMDoTVSCodeEditorPlugin() {
+}
+
+bool PMDoTVSCodeEditorPlugin::handles(Object *p_object) const {
+	return Object::cast_to<Script>(p_object) != nullptr;
+}
+
+void PMDoTVSCodeEditorPlugin::edit(Object *p_object) {
+	Script *scr = Object::cast_to<Script>(p_object);
+	if (scr && dock && !scr->get_path().is_empty()) {
+		dock->open_script(scr->get_path());
+	}
 }
 
 void PMDoTVSCodeEditorPlugin::make_visible(bool p_visible) {
