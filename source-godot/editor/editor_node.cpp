@@ -7467,7 +7467,9 @@ EditorNode::EditorNode() {
 	add_editor_plugin(memnew(AnimationTrackKeyEditEditorPlugin));
 	add_editor_plugin(memnew(CanvasItemEditorPlugin));
 	add_editor_plugin(memnew(Node3DEditorPlugin));
+#ifndef MODULE_PMDOT_VSCODE_ENABLED
 	add_editor_plugin(memnew(ScriptEditorPlugin));
+#endif
 
 	EditorAudioBuses *audio_bus_editor = EditorAudioBuses::register_editor();
 

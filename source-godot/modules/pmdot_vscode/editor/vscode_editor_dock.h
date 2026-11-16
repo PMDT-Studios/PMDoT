@@ -41,7 +41,7 @@ private:
 	VSCodeEditorDock *dock = nullptr;
 
 public:
-	virtual String get_name() const override { return "VSCode"; }
+	virtual String get_name() const override { return "Code"; }
 	virtual bool has_main_screen() const override { return true; }
 	virtual void make_visible(bool p_visible) override;
 
