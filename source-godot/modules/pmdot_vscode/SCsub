@@ -15,6 +15,7 @@ if env.editor_build:
         "editor/lsp/vscode_lsp_manager.cpp",
         "editor/debugger/vscode_dap_client.cpp",
         "editor/debugger/vscode_test_runner.cpp",
+        "editor/diagnostics/vscode_diagnostic_hub.cpp",
         "editor/platform/webview_windows.cpp",
         "editor/platform/webview_posix.cpp",
     ]
