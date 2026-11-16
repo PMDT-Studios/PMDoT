@@ -197,21 +197,29 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 
 	btn_pencil = memnew(Button);
 	btn_pencil->set_text("Pencil [P]");
+	Ref<Texture2D> pencil_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/pencil.svg");
+	btn_pencil->set_icon(pencil_icon);
 	tools_panel->add_child(btn_pencil);
 	btn_pencil->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_PENCIL));
 
 	btn_eraser = memnew(Button);
 	btn_eraser->set_text("Eraser [E]");
+	Ref<Texture2D> eraser_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/eraser.svg");
+	btn_eraser->set_icon(eraser_icon);
 	tools_panel->add_child(btn_eraser);
 	btn_eraser->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_ERASER));
 
 	btn_picker = memnew(Button);
 	btn_picker->set_text("Picker [I]");
+	Ref<Texture2D> picker_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/pipette.svg");
+	btn_eraser->set_icon(picker_icon);
 	tools_panel->add_child(btn_picker);
 	btn_picker->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_PICKER));
 
 	btn_fill = memnew(Button);
 	btn_fill->set_text("Bucket [G]");
+	Ref<Texture2D> bucket_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/paint-bucket.svg");
+	btn_eraser->set_icon(bucket_icon);
 	tools_panel->add_child(btn_fill);
 	btn_fill->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_FILL));
 
