@@ -132,6 +132,10 @@
       margin-left: 4px;
       margin-top: 4px;
     }
+    .pmdot-lens-error-line { background: rgba(255, 0, 0, 0.08); }
+    .pmdot-lens-warn-line { background: rgba(255, 200, 0, 0.06); }
+    .pmdot-lens-error-text { color: #f48771 !important; font-style: italic; }
+    .pmdot-lens-warn-text { color: #cca700 !important; font-style: italic; }
   </style>
 </head>
 <body>
@@ -193,5 +197,6 @@
   <script src="bridge.js"></script>
   <script src="plugins/lsp_client.js"></script>
   <script src="plugins/dap_debugger.js"></script>
+  <script src="plugins/error_lens.js"></script>
 </body>
 </html>
