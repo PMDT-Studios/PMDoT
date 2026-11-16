@@ -13,7 +13,8 @@
 
 | Subsystem | Status | Modification |
 |---|---|---|
-| Module & Build | ✅ | Added `source-godot/modules/pmdot_vscode` and registered `pmdot_vscode` segment in `pmdot.py`. |
+| Module & Build | ✅ | Added `source-godot/modules/pmdot_vscode` (with vendorized `monaco-editor` 0.57.0 and `WebView2` SDK) and registered `pmdot_vscode` segment in `pmdot.py`. |
+| Editor Integration | ✅ | `source-godot/editor/editor_node.cpp`: Guarded `ScriptEditorPlugin` with `#ifndef MODULE_PMDOT_VSCODE_ENABLED`, replacing the legacy `"Script"` tab with the `"Code"` IDE tab. |
 | Native WebView | ✅ | Implemented `WebViewBackend` for Windows (`WebView2`/Win32) and POSIX with pre-warmed dock initialization. |
 | Monaco & IPC Bridge | ✅ | Implemented `VSCodeBridge` C++ <-> JS messaging for `open_script`, `save_script`, and dirty tracking. |
 | Language & LSP | ✅ | Added `VSCodeLSPManager` and `EditorSettings` for C#, C++, Java, and Markdown. |
