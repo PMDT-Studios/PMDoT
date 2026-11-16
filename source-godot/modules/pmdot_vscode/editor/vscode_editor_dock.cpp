@@ -61,6 +61,7 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 		lsp_manager.attach(backend);
 		dap_client.attach(backend);
 		test_runner.attach(backend);
+		diagnostic_hub.attach(backend);
 		bridge.set_custom_handler([this](const String &p_method, const Dictionary &p_params) {
 			if (p_method == "dap_toggle_breakpoint") {
 				dap_client.toggle_breakpoint(p_params.get("path", ""), int(p_params.get("line", 1)));
