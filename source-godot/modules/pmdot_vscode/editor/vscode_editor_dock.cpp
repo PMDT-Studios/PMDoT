@@ -58,6 +58,7 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 	if (backend->initialize(native_handle, bounds)) {
 		backend->set_visible(is_visible_in_tree());
 		bridge.attach(backend);
+		lsp_manager.attach(backend);
 		bridge.set_dirty_callback([this](const String &p_path, bool p_dirty) {
 			if (status_label) {
 				String marker = p_dirty ? " *" : "";
@@ -126,6 +127,7 @@ VSCodeEditorDock::~VSCodeEditorDock() {
 }
 
 PMDoTVSCodeEditorPlugin::PMDoTVSCodeEditorPlugin() {
+	VSCodeLSPManager::register_editor_settings();
 	dock = memnew(VSCodeEditorDock);
 	dock->hide();
 	EditorNode::get_singleton()->get_editor_main_screen()->get_control()->add_child(dock);

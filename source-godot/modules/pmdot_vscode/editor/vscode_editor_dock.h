@@ -4,6 +4,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/plugins/editor_plugin.h"
+#include "lsp/vscode_lsp_manager.h"
 #include "platform/webview_backend.h"
 #include "vscode_bridge.h"
 #include "scene/gui/box_container.h"
@@ -18,6 +19,7 @@ private:
 	Label *status_label = nullptr;
 	WebViewBackend *backend = nullptr;
 	VSCodeBridge bridge;
+	VSCodeLSPManager lsp_manager;
 	bool prewarmed = false;
 
 	void _ensure_backend_initialized();
