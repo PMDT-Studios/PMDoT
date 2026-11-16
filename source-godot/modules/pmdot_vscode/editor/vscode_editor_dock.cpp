@@ -1,0 +1,127 @@
+#ifdef TOOLS_ENABLED
+
+#include "vscode_editor_dock.h"
+
+#include "core/io/dir_access.h"
+#include "editor/editor_node.h"
+#include "scene/main/window.h"
+#include "servers/display_server.h"
+
+void VSCodeEditorDock::_bind_methods() {
+}
+
+void VSCodeEditorDock::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_READY: {
+			prewarm();
+		} break;
+		case NOTIFICATION_RESIZED:
+		case NOTIFICATION_MOVED_IN_PARENT: {
+			_sync_bounds();
+		} break;
+		case NOTIFICATION_VISIBILITY_CHANGED: {
+			if (backend) {
+				backend->set_visible(is_visible_in_tree());
+				_sync_bounds();
+			}
+		} break;
+		case NOTIFICATION_EXIT_TREE: {
+			if (backend) {
+				backend->shutdown();
+			}
+		} break;
+	}
+}
+
+void VSCodeEditorDock::_ensure_backend_initialized() {
+	if (backend || !is_inside_tree()) {
+		return;
+	}
+
+	Window *win = get_window();
+	if (!win) {
+		return;
+	}
+
+	int64_t native_handle = DisplayServer::get_singleton()->window_get_native_handle(
+			DisplayServer::WINDOW_HANDLE,
+			win->get_window_id());
+
+	if (native_handle == 0) {
+		return;
+	}
+
+	backend = WebViewBackend::create();
+	Rect2 rect = webview_container->get_global_rect();
+	Rect2i bounds(rect.position.x, rect.position.y, MAX(1, rect.size.x), MAX(1, rect.size.y));
+	if (backend->initialize(native_handle, bounds)) {
+		backend->set_visible(is_visible_in_tree());
+		prewarmed = true;
+	}
+}
+
+void VSCodeEditorDock::_sync_bounds() {
+	if (!backend || !backend->is_ready() || !webview_container) {
+		return;
+	}
+	Rect2 rect = webview_container->get_global_rect();
+	Rect2i bounds(rect.position.x, rect.position.y, MAX(1, rect.size.x), MAX(1, rect.size.y));
+	backend->set_bounds(bounds);
+}
+
+void VSCodeEditorDock::prewarm() {
+	if (prewarmed) {
+		return;
+	}
+	_ensure_backend_initialized();
+}
+
+void VSCodeEditorDock::set_ide_visible(bool p_visible) {
+	set_visible(p_visible);
+	if (p_visible) {
+		_ensure_backend_initialized();
+		_sync_bounds();
+	}
+	if (backend) {
+		backend->set_visible(p_visible);
+	}
+}
+
+VSCodeEditorDock::VSCodeEditorDock() {
+	set_v_size_flags(SIZE_EXPAND_FILL);
+	set_h_size_flags(SIZE_EXPAND_FILL);
+
+	webview_container = memnew(Control);
+	webview_container->set_v_size_flags(SIZE_EXPAND_FILL);
+	webview_container->set_h_size_flags(SIZE_EXPAND_FILL);
+	add_child(webview_container);
+
+	status_label = memnew(Label);
+	status_label->set_text("PMDoT VS Code IDE (Monaco) | Ready");
+	add_child(status_label);
+}
+
+VSCodeEditorDock::~VSCodeEditorDock() {
+	if (backend) {
+		backend->shutdown();
+		memdelete(backend);
+		backend = nullptr;
+	}
+}
+
+PMDoTVSCodeEditorPlugin::PMDoTVSCodeEditorPlugin() {
+	dock = memnew(VSCodeEditorDock);
+	dock->hide();
+	EditorNode::get_singleton()->get_editor_main_screen()->get_control()->add_child(dock);
+}
+
+PMDoTVSCodeEditorPlugin::~PMDoTVSCodeEditorPlugin() {
+}
+
+void PMDoTVSCodeEditorPlugin::make_visible(bool p_visible) {
+	if (dock) {
+		dock->set_ide_visible(p_visible);
+	}
+}
+
+#endif // TOOLS_ENABLED
