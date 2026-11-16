@@ -15,6 +15,10 @@ void VSCodeEditorDock::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY: {
 			prewarm();
+			set_process(true);
+		} break;
+		case NOTIFICATION_PROCESS: {
+			perf_profiler.poll_and_push(bridge.get_active_file_path(), is_visible_in_tree());
 		} break;
 		case NOTIFICATION_RESIZED:
 		case NOTIFICATION_MOVED_IN_PARENT: {
