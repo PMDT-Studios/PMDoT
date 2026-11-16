@@ -17,6 +17,7 @@ if env.editor_build:
         "editor/debugger/vscode_test_runner.cpp",
         "editor/diagnostics/vscode_diagnostic_hub.cpp",
         "editor/profiler/vscode_codelens_profiler.cpp",
+        "editor/vcs/vscode_git_tracker.cpp",
         "editor/platform/webview_windows.cpp",
         "editor/platform/webview_posix.cpp",
     ]
