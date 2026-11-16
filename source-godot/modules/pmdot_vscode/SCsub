@@ -9,6 +9,8 @@ sources = [
 ]
 
 if env["platform"] == "windows":
-    env_vscode.Append(LIBS=["ole32", "oleaut32", "shlwapi", "user32"])
+    env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/thirdparty/webview2/include"])
+    env.Append(LIBPATH=["#modules/pmdot_vscode/thirdparty/webview2/x64"])
+    env.Append(LIBS=["ole32", "oleaut32", "shlwapi", "user32", "WebView2LoaderStatic", "version", "advapi32"])
 
 env_vscode.add_source_files(env.modules_sources, sources)
