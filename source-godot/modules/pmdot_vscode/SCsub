@@ -1,0 +1,14 @@
+# SCsub for pmdot_vscode module in PMDoT Engine
+
+Import("env")
+
+env_vscode = env.Clone()
+
+sources = [
+    "register_types.cpp",
+]
+
+if env["platform"] == "windows":
+    env_vscode.Append(LIBS=["ole32", "oleaut32", "shlwapi", "user32"])
+
+env_vscode.add_source_files(env.modules_sources, sources)
