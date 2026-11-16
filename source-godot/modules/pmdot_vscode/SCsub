@@ -11,6 +11,7 @@ sources = [
 if env.editor_build:
     sources += [
         "editor/vscode_editor_dock.cpp",
+        "editor/vscode_bridge.cpp",
         "editor/platform/webview_windows.cpp",
         "editor/platform/webview_posix.cpp",
     ]
