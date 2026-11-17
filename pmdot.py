@@ -977,8 +977,9 @@ def cmd_build(extra_args=None):
         "module_jsonrpc_enabled=no",
         "-j8",
     ]
-    if platform_target == "windows":
-        base_scons.append("vsproj=yes")
+    if "--vsproj" in clean_args and platform_target == "windows":
+        clean_args.remove("--vsproj")
+        base_scons.extend(["vsproj=yes", "vsproj_gen_only=no"])
     base_scons.extend(clean_args)
 
     build_start = time.time()
