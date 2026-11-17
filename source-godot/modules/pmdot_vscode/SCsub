@@ -26,7 +26,8 @@ if env.editor_build:
 
 if env["platform"] == "windows":
     env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/thirdparty/webview2/include"])
-    env.Append(LIBPATH=["#modules/pmdot_vscode/thirdparty/webview2/x64"])
-    env.Append(LIBS=["WebView2LoaderStatic.lib", "ole32.lib", "oleaut32.lib", "shlwapi.lib", "user32.lib", "gdi32.lib", "version.lib", "advapi32.lib"])
+    if env.msvc:
+        webview2_lib = env.File("#modules/pmdot_vscode/thirdparty/webview2/x64/WebView2LoaderStatic.lib").abspath
+        env.Append(LINKFLAGS=[webview2_lib, "version.lib"])
 
 env_vscode.add_source_files(env.modules_sources, sources)
