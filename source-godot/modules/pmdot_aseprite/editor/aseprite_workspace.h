@@ -152,6 +152,8 @@ protected:
 	void _update_canvas_rect_size();
 	void _resize_canvas(int p_new_width, int p_new_height, bool p_scale);
 
+	Ref<Texture2D> _load_svg_icon(const char *p_svg);
+
 public:
 	EditorAsepriteWorkspace();
 	~EditorAsepriteWorkspace();

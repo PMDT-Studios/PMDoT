@@ -8,6 +8,7 @@
 #include "scene/gui/margin_container.h"
 #include "scene/gui/separator.h"
 #include "core/input/input_event.h"
+#include "aseprite_icons.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
@@ -197,29 +198,25 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 
 	btn_pencil = memnew(Button);
 	btn_pencil->set_text("Pencil [P]");
-	Ref<Texture2D> pencil_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/pencil.svg");
-	btn_pencil->set_icon(pencil_icon);
+	btn_pencil->set_icon(_load_svg_icon(AsepriteIcons::PENCIL));
 	tools_panel->add_child(btn_pencil);
 	btn_pencil->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_PENCIL));
 
 	btn_eraser = memnew(Button);
 	btn_eraser->set_text("Eraser [E]");
-	Ref<Texture2D> eraser_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/eraser.svg");
-	btn_eraser->set_icon(eraser_icon);
+	btn_eraser->set_icon(_load_svg_icon(AsepriteIcons::ERASER));
 	tools_panel->add_child(btn_eraser);
 	btn_eraser->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_ERASER));
 
 	btn_picker = memnew(Button);
 	btn_picker->set_text("Picker [I]");
-	Ref<Texture2D> picker_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/pipette.svg");
-	btn_eraser->set_icon(picker_icon);
+	btn_picker->set_icon(_load_svg_icon(AsepriteIcons::PIPETTE));
 	tools_panel->add_child(btn_picker);
 	btn_picker->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_PICKER));
 
 	btn_fill = memnew(Button);
 	btn_fill->set_text("Bucket [G]");
-	Ref<Texture2D> bucket_icon = ResourceLoader::load("modules/Pmdot_aseprite/Icons/paint-bucket.svg");
-	btn_eraser->set_icon(bucket_icon);
+	btn_fill->set_icon(_load_svg_icon(AsepriteIcons::PAINT_BUCKET));
 	tools_panel->add_child(btn_fill);
 	btn_fill->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_FILL));
 
@@ -337,6 +334,19 @@ void EditorAsepriteWorkspace::_create_checkerboard_texture() {
 		}
 	}
 	checkerboard_texture = ImageTexture::create_from_image(checker_img);
+}
+
+Ref<Texture2D> EditorAsepriteWorkspace::_load_svg_icon(const char *p_svg) {
+	Ref<Image> image;
+	image.instantiate();
+
+	Error err = image->load_svg_from_string(String::utf8(p_svg));
+	if (err != OK) {
+		ERR_PRINT("Failed to parse embedded SVG");
+		return Ref<Texture2D>();
+	}
+
+	return ImageTexture::create_from_image(image);
 }
 
 void EditorAsepriteWorkspace::_update_canvas_rect_size() {
@@ -529,29 +539,46 @@ void EditorAsepriteWorkspace::unhandled_key_input(const Ref<InputEvent> &p_event
 	}
 }
 
+void _gui_input(const Ref<InputEvent> &p_event){
+
+}
 void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) {
 	Ref<InputEventMouseButton> mb = p_event;
 	Ref<InputEventMouseMotion> mm = p_event;
-	Ref<InputEventMouseButton> mz = p_event;
 
-	if (mb.is_valid() && mb->get_button_index() == MouseButton::LEFT) {
-		if (mb->is_pressed()) {
-			_save_undo_state();
-			is_drawing = true;
-			Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
-			int px = Math::floor(local_pos.x / zoom_level);
-			int py = Math::floor(local_pos.y / zoom_level);
-			px = CLAMP(px, 0, canvas_width - 1);
-			py = CLAMP(py, 0, canvas_height - 1);
+	if (mb.is_valid()){
+		if(mb->get_button_index() == MouseButton::LEFT){
+			if (mb->is_pressed()) {
+				_save_undo_state();
+				is_drawing = true;
+				Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
+				int px = Math::floor(local_pos.x / zoom_level);
+				int py = Math::floor(local_pos.y / zoom_level);
+				px = CLAMP(px, 0, canvas_width - 1);
+				py = CLAMP(py, 0, canvas_height - 1);
 
-			_apply_tool_at(px, py);
-			last_mouse_px = Vector2i(px, py);
-			update_canvas_texture();
-		} else {
-			is_drawing = false;
-			last_mouse_px = Vector2i(-1, -1);
+				_apply_tool_at(px, py);
+				last_mouse_px = Vector2i(px, py);
+				update_canvas_texture();
+			} else {
+				is_drawing = false;
+				last_mouse_px = Vector2i(-1, -1);
+			}
+			return;
 		}
-	} else if (mm.is_valid()) {
+
+		if(mb->is_pressed()){
+			if (mb->get_button_index() == MouseButton::WHEEL_UP) {
+                _on_zoom_in();
+            } else if (mb->get_button_index() == MouseButton::WHEEL_DOWN) {
+                _on_zoom_out();
+            }
+		}
+
+		return;
+	}
+
+	if (mm.is_valid()) {
 		Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
 		int px = Math::floor(local_pos.x / zoom_level);
 		int py = Math::floor(local_pos.y / zoom_level);
@@ -571,18 +598,6 @@ void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) 
 			}
 			last_mouse_px = Vector2i(px, py);
 			update_canvas_texture();
-		}
-	} else if (mz.is_valid() && mz->is_pressed()) {
-		if (mz->get_button_index() == MouseButton::WHEEL_UP) {
-			_on_zoom_in();
-			accept_event();
-			return;
-		}
-
-		if (mz->get_button_index() == MouseButton::WHEEL_DOWN) {
-			_on_zoom_out();
-			accept_event();
-			return;
 		}
 	}
 }
