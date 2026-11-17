@@ -8,6 +8,9 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <unknwn.h>
+#include <objbase.h>
+#include <oaidl.h>
 #include <WebView2.h>
 #include <atomic>
 
@@ -16,13 +19,13 @@ static bool class_registered = false;
 
 namespace {
 
-template <typename TInterface, typename TFunc>
+template <typename TInterface, typename... TArgs>
 class ComCallback : public TInterface {
 	std::atomic<ULONG> ref_count{ 1 };
-	TFunc callback;
+	std::function<HRESULT(TArgs...)> callback;
 
 public:
-	explicit ComCallback(TFunc p_cb) : callback(p_cb) {}
+	explicit ComCallback(std::function<HRESULT(TArgs...)> p_cb) : callback(p_cb) {}
 	virtual ~ComCallback() = default;
 
 	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override {
@@ -50,8 +53,7 @@ public:
 		return count;
 	}
 
-	template <typename... Args>
-	HRESULT STDMETHODCALLTYPE Invoke(Args... args) override {
+	HRESULT STDMETHODCALLTYPE Invoke(TArgs... args) override {
 		return callback(args...);
 	}
 };
@@ -145,13 +147,13 @@ bool WebViewWindows::initialize(int64_t p_native_window_handle, const Rect2i &p_
 	Char16String user_data_w = user_data_dir.utf16();
 
 	auto *env_handler = new ComCallback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
-			std::function<HRESULT(HRESULT, ICoreWebView2Environment *)>>(
+			HRESULT, ICoreWebView2Environment *>(
 			[this, host, state](HRESULT result, ICoreWebView2Environment *env) -> HRESULT {
 				if (FAILED(result) || !env || !host_hwnd) {
 					return S_OK;
 				}
 				auto *ctrl_handler = new ComCallback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
-						std::function<HRESULT(HRESULT, ICoreWebView2Controller *)>>(
+						HRESULT, ICoreWebView2Controller *>(
 						[this, host, state](HRESULT ctrl_res, ICoreWebView2Controller *controller) -> HRESULT {
 							if (FAILED(ctrl_res) || !controller || !host_hwnd) {
 								return S_OK;
@@ -171,7 +173,7 @@ bool WebViewWindows::initialize(int64_t p_native_window_handle, const Rect2i &p_
 
 								EventRegistrationToken msg_token;
 								auto *msg_handler = new ComCallback<ICoreWebView2WebMessageReceivedEventHandler,
-										std::function<HRESULT(ICoreWebView2 *, ICoreWebView2WebMessageReceivedEventArgs *)>>(
+										ICoreWebView2 *, ICoreWebView2WebMessageReceivedEventArgs *>(
 										[this](ICoreWebView2 *, ICoreWebView2WebMessageReceivedEventArgs *args) -> HRESULT {
 											LPWSTR json_w = nullptr;
 											if (args && SUCCEEDED(args->get_WebMessageAsJson(&json_w)) && json_w) {
@@ -192,7 +194,7 @@ bool WebViewWindows::initialize(int64_t p_native_window_handle, const Rect2i &p_
 
 								EventRegistrationToken nav_token;
 								auto *nav_handler = new ComCallback<ICoreWebView2NavigationCompletedEventHandler,
-										std::function<HRESULT(ICoreWebView2 *, ICoreWebView2NavigationCompletedEventArgs *)>>(
+										ICoreWebView2 *, ICoreWebView2NavigationCompletedEventArgs *>(
 										[this, state](ICoreWebView2 *wv, ICoreWebView2NavigationCompletedEventArgs *) -> HRESULT {
 											state->navigation_completed = true;
 											ready = true;
