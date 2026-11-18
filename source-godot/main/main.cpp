@@ -2135,6 +2135,12 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		}
 	}
 
+#if !defined(D3D12_ENABLED) && defined(VULKAN_ENABLED)
+	if (rendering_driver.to_lower() == "d3d12") {
+		rendering_driver = "vulkan";
+	}
+#endif
+
 	// note this is the desired rendering driver, it doesn't mean we will get it.
 	// TODO - make sure this is updated in the case of fallbacks, so that the user interface
 	// shows the correct driver string.
