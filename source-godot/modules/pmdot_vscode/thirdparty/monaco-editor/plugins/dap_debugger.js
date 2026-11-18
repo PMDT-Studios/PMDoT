@@ -8,6 +8,7 @@
     callStack: [],
     variables: [],
     tests: [],
+    testsLoaded: false,
     testOutput: "No tests run yet."
   };
 
@@ -96,9 +97,13 @@
     });
 
     const tree = container.querySelector("#test-tree");
-    if (!debugState.tests.length) {
+    if (!debugState.testsLoaded) {
       IDE.postToGodot("test_discover_req", {});
       tree.innerHTML = `<div class="tree-item" style="color:#858585;">Scanning project tests...</div>`;
+      return;
+    }
+    if (!debugState.tests.length) {
+      tree.innerHTML = `<div class="tree-item" style="color:#858585;">No tests found.</div>`;
       return;
     }
     debugState.tests.forEach((t) => {
@@ -134,7 +139,11 @@
     }
   }
 
-  window.addEventListener("load", () => setTimeout(boot, 350));
+  if (IDE.onReady) {
+    IDE.onReady(boot);
+  } else {
+    window.addEventListener("load", () => setTimeout(boot, 350));
+  }
 
   if (IDE.onMessage) {
     IDE.onMessage((msg) => {
@@ -145,6 +154,7 @@
           renderBreakpointsInEditor(msg.params.lines || []);
         }
       } else if (msg.method === "tests_discovered") {
+        debugState.testsLoaded = true;
         debugState.tests = msg.params.tests || [];
         if (IDE.activeView === "testing") IDE.switchSidebarView("testing");
       } else if (msg.method === "tests_finished") {

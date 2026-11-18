@@ -5,7 +5,8 @@
   const gitState = {
     branch: "main",
     changes: [],
-    commits: []
+    commits: [],
+    commitsLoaded: false
   };
 
   function renderGutter(hunks) {
@@ -109,9 +110,13 @@
   }
 
   function renderGitGraphTab(el) {
-    if (!gitState.commits.length) {
+    if (!gitState.commitsLoaded) {
       IDE.postToGodot("git_graph_req", {});
       el.innerHTML = `<div style="color:#858585;">Loading Git Graph...</div>`;
+      return;
+    }
+    if (!gitState.commits.length) {
+      el.innerHTML = `<div style="color:#858585;">No git commits found.</div>`;
       return;
     }
     const rowH = 24;
@@ -163,7 +168,11 @@
     }
   }
 
-  window.addEventListener("load", () => setTimeout(boot, 350));
+  if (IDE.onReady) {
+    IDE.onReady(boot);
+  } else {
+    window.addEventListener("load", () => setTimeout(boot, 350));
+  }
 
   if (IDE.onMessage) {
     IDE.onMessage((msg) => {
@@ -178,6 +187,7 @@
         updateBadges();
         if (IDE.activeView === "scm") IDE.switchSidebarView("scm");
       } else if (msg.method === "git_graph_update") {
+        gitState.commitsLoaded = true;
         gitState.commits = msg.params.commits || [];
         if (IDE.activeBottomTab === "git-graph") IDE.openBottomTab("git-graph");
       }

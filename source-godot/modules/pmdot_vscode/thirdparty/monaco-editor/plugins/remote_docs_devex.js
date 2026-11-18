@@ -3,7 +3,9 @@
   const devexState = {
     logs: [],
     scenes: [],
-    todos: []
+    scenesLoaded: false,
+    todos: [],
+    todosLoaded: false
   };
 
   const DOC_LINKS = [
@@ -83,9 +85,11 @@
     });
 
     const sceneList = container.querySelector("#scene-tree-list");
-    if (!devexState.scenes.length) {
+    if (!devexState.scenesLoaded) {
       IDE.postToGodot("scene_graph_req", {});
       sceneList.innerHTML = `<div class="tree-item" style="color:#858585;">Scanning .tscn files...</div>`;
+    } else if (!devexState.scenes.length) {
+      sceneList.innerHTML = `<div class="tree-item" style="color:#858585;">No .tscn scenes found.</div>`;
     } else {
       devexState.scenes.forEach((s) => {
         const hdr = document.createElement("div");
@@ -105,8 +109,11 @@
     }
 
     const todoList = container.querySelector("#todo-tree-list");
-    if (!devexState.todos.length) {
+    if (!devexState.todosLoaded) {
       IDE.postToGodot("todos_req", {});
+      todoList.innerHTML = `<div class="tree-item" style="color:#858585;">Scanning TODOs...</div>`;
+    } else if (!devexState.todos.length) {
+      todoList.innerHTML = `<div class="tree-item" style="color:#858585;">No TODO/FIXME/HACK comments found.</div>`;
     } else {
       devexState.todos.forEach((t) => {
         const row = document.createElement("div");
@@ -157,7 +164,11 @@
     }
   }
 
-  window.addEventListener("load", () => setTimeout(boot, 350));
+  if (IDE.onReady) {
+    IDE.onReady(boot);
+  } else {
+    window.addEventListener("load", () => setTimeout(boot, 350));
+  }
 
   if (IDE.onMessage) {
     IDE.onMessage((msg) => {
@@ -167,9 +178,11 @@
         if (IDE.activeView === "remote") IDE.switchSidebarView("remote");
         if (IDE.activeBottomTab === "logs") IDE.openBottomTab("logs");
       } else if (msg.method === "scene_graph_update") {
+        devexState.scenesLoaded = true;
         devexState.scenes = msg.params.scenes || [];
         if (IDE.activeView === "scene-graph") IDE.switchSidebarView("scene-graph");
       } else if (msg.method === "todos_update") {
+        devexState.todosLoaded = true;
         devexState.todos = msg.params.todos || [];
         if (IDE.activeView === "scene-graph") IDE.switchSidebarView("scene-graph");
       }

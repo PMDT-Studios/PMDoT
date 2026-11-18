@@ -204,7 +204,9 @@
     }
   }
 
-  if (typeof monaco !== "undefined") {
+  if (IDE.onReady) {
+    IDE.onReady(boot);
+  } else if (typeof monaco !== "undefined") {
     boot();
   } else {
     window.addEventListener("load", () => setTimeout(boot, 300));

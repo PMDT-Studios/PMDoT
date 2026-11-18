@@ -76,11 +76,13 @@ void VSCodeDevExHub::_scan_scenes_recursive(const String &p_dir, Array &r_scenes
 						int n_start = line.find("name=\"");
 						if (n_start >= 0) {
 							int n_end = line.find("\"", n_start + 6);
-							current_node = line.substr(n_start + 6, n_end - n_start - 6);
-							Dictionary node_info;
-							node_info["name"] = current_node;
-							node_info["parent"] = line.contains("parent=\"") ? "child" : "root";
-							nodes.push_back(node_info);
+							if (n_end > n_start + 6) {
+								current_node = line.substr(n_start + 6, n_end - n_start - 6);
+								Dictionary node_info;
+								node_info["name"] = current_node;
+								node_info["parent"] = line.contains("parent=\"") ? "child" : "root";
+								nodes.push_back(node_info);
+							}
 						}
 					}
 				}

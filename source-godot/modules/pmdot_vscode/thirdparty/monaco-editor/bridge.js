@@ -12,7 +12,8 @@
     bottomTabs: new Map(),
     activeBottomTab: "",
     commands: new Map(),
-    messageHandlers: []
+    messageHandlers: [],
+    readyHandlers: []
   });
   window.PMDoTIDE = state;
 
@@ -49,6 +50,14 @@
 
   state.onMessage = function (fn) {
     state.messageHandlers.push(fn);
+  };
+
+  state.onReady = function (fn) {
+    if (state.ready) {
+      fn();
+    } else {
+      state.readyHandlers.push(fn);
+    }
   };
 
   function hydrateSvgIcons() {
@@ -374,6 +383,9 @@
 
     state.editor = editor;
     state.ready = true;
+    state.readyHandlers.forEach((fn) => {
+      try { fn(); } catch (err) { console.error(err); }
+    });
 
     editor.onDidChangeCursorPosition(updateStatusBar);
     editor.onDidChangeModelContent(() => {
@@ -406,8 +418,29 @@
       document.getElementById("bottom-panel").classList.toggle("open");
     });
     state.registerCommand("file.new", "File: New Code File", () => {
-      const name = prompt("New file path (e.g. scripts/Player.cs, src/Main.cpp, README.md):", "scripts/NewScript.cs");
-      if (name && name.trim()) postToGodot("create_file_req", { path: name.trim() });
+      switchSidebarView("explorer");
+      const container = document.getElementById("sidebar-content");
+      if (!container) return;
+      let box = document.getElementById("inline-new-file");
+      if (!box) {
+        box = document.createElement("input");
+        box.id = "inline-new-file";
+        box.className = "sidebar-input";
+        box.placeholder = "scripts/NewScript.cs (Enter to create, Esc to cancel)";
+        box.value = "scripts/NewScript.cs";
+        container.prepend(box);
+      }
+      box.focus();
+      box.select();
+      box.onkeydown = (e) => {
+        if (e.key === "Enter" && box.value.trim()) {
+          const val = box.value.trim();
+          box.remove();
+          postToGodot("create_file_req", { path: val });
+        } else if (e.key === "Escape") {
+          box.remove();
+        }
+      };
     });
 
     document.querySelectorAll(".act-btn").forEach((btn) => {
