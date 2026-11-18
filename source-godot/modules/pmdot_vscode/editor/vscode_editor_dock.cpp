@@ -68,6 +68,7 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 		diagnostic_hub.attach(backend);
 		perf_profiler.attach(backend);
 		git_tracker.attach(backend);
+		devex_hub.attach(backend);
 		bridge.set_custom_handler([this](const String &p_method, const Dictionary &p_params) {
 			if (p_method == "dap_toggle_breakpoint") {
 				dap_client.toggle_breakpoint(p_params.get("path", ""), int(p_params.get("line", 1)));
@@ -93,6 +94,14 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 				git_tracker.commit_changes(p_params.get("message", ""));
 			} else if (p_method == "git_diff_req") {
 				git_tracker.open_file_diff(p_params.get("path", ""));
+			} else if (p_method == "open_url_req") {
+				devex_hub.open_external_url(p_params.get("url", ""));
+			} else if (p_method == "scene_graph_req") {
+				devex_hub.scan_scene_bindings();
+			} else if (p_method == "todos_req") {
+				devex_hub.scan_todos();
+			} else if (p_method == "logs_clear_req") {
+				devex_hub.clear_logs();
 			}
 		});
 		bridge.set_ready_callback([this]() {

@@ -5,6 +5,7 @@
 
 #include "debugger/vscode_dap_client.h"
 #include "debugger/vscode_test_runner.h"
+#include "devex/vscode_devex_hub.h"
 #include "diagnostics/vscode_diagnostic_hub.h"
 #include "editor/plugins/editor_plugin.h"
 #include "lsp/vscode_lsp_manager.h"
@@ -30,6 +31,7 @@ private:
 	VSCodeDiagnosticHub diagnostic_hub;
 	VSCodeCodeLensProfiler perf_profiler;
 	VSCodeGitTracker git_tracker;
+	VSCodeDevExHub devex_hub;
 	bool prewarmed = false;
 
 	void _ensure_backend_initialized();
