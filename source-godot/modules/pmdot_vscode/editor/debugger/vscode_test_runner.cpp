@@ -5,6 +5,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/templates/list.h"
 
 void VSCodeTestRunner::attach(WebViewBackend *p_backend) {
 	backend = p_backend;

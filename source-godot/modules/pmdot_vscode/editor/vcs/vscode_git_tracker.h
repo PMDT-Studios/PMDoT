@@ -4,6 +4,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "../platform/webview_backend.h"
+#include "core/templates/list.h"
 #include "core/templates/vector.h"
 
 class VSCodeGitTracker {
