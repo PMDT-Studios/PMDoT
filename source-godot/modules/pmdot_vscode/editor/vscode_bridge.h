@@ -15,6 +15,7 @@ class VSCodeBridge {
 public:
 	using DirtyChangedCallback = std::function<void(const String &, bool)>;
 	using ReadyCallback = std::function<void()>;
+	using CustomMessageHandler = std::function<void(const String &, const Dictionary &)>;
 
 private:
 	WebViewBackend *backend = nullptr;
@@ -22,6 +23,7 @@ private:
 	bool dirty = false;
 	DirtyChangedCallback dirty_callback;
 	ReadyCallback ready_callback;
+	CustomMessageHandler custom_handler;
 
 	void _send_payload(const String &p_method, const Dictionary &p_params);
 	void _scan_dir_recursive(const String &p_dir, Array &r_files) const;
@@ -32,6 +34,7 @@ public:
 	void attach(WebViewBackend *p_backend);
 	void set_dirty_callback(DirtyChangedCallback p_callback);
 	void set_ready_callback(ReadyCallback p_callback);
+	void set_custom_handler(CustomMessageHandler p_handler);
 
 	bool open_file(const String &p_res_path);
 	bool save_file(const String &p_res_path, const String &p_content);

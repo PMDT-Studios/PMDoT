@@ -33,6 +33,10 @@ void VSCodeBridge::set_ready_callback(ReadyCallback p_callback) {
 	ready_callback = p_callback;
 }
 
+void VSCodeBridge::set_custom_handler(CustomMessageHandler p_handler) {
+	custom_handler = p_handler;
+}
+
 String VSCodeBridge::detect_language_id(const String &p_path) {
 	String ext = p_path.get_extension().to_lower();
 	if (ext == "cs" || ext == "csproj") {
@@ -272,6 +276,8 @@ void VSCodeBridge::handle_js_message(const String &p_json_payload) {
 		if (dirty_callback) {
 			dirty_callback(path, is_dirty);
 		}
+	} else if (custom_handler) {
+		custom_handler(method, params);
 	}
 }
 

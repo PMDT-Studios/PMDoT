@@ -60,6 +60,22 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 		bridge.attach(backend);
 		lsp_manager.attach(backend);
 		dap_client.attach(backend);
+		test_runner.attach(backend);
+		bridge.set_custom_handler([this](const String &p_method, const Dictionary &p_params) {
+			if (p_method == "dap_toggle_breakpoint") {
+				dap_client.toggle_breakpoint(p_params.get("path", ""), int(p_params.get("line", 1)));
+			} else if (p_method == "dap_command") {
+				String cmd = p_params.get("command", "");
+				if (cmd == "continue") dap_client.continue_execution();
+				else if (cmd == "step_over") dap_client.step_over();
+				else if (cmd == "step_into") dap_client.step_into();
+				else if (cmd == "step_out") dap_client.step_out();
+			} else if (p_method == "test_discover_req") {
+				test_runner.discover_tests();
+			} else if (p_method == "test_run_req") {
+				test_runner.run_tests(p_params.get("filter", "all"));
+			}
+		});
 		bridge.set_dirty_callback([this](const String &p_path, bool p_dirty) {
 			if (status_label) {
 				String marker = p_dirty ? " *" : "";
