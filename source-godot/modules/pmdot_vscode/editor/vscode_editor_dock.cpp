@@ -81,7 +81,22 @@ void VSCodeEditorDock::_ensure_backend_initialized() {
 				test_runner.discover_tests();
 			} else if (p_method == "test_run_req") {
 				test_runner.run_tests(p_params.get("filter", "all"));
+			} else if (p_method == "git_status_req") {
+				git_tracker.refresh_status();
+			} else if (p_method == "git_graph_req") {
+				git_tracker.refresh_graph();
+			} else if (p_method == "git_stage_req") {
+				git_tracker.stage_file(p_params.get("path", ""));
+			} else if (p_method == "git_unstage_req") {
+				git_tracker.unstage_file(p_params.get("path", ""));
+			} else if (p_method == "git_commit_req") {
+				git_tracker.commit_changes(p_params.get("message", ""));
+			} else if (p_method == "git_diff_req") {
+				git_tracker.open_file_diff(p_params.get("path", ""));
 			}
+		});
+		bridge.set_ready_callback([this]() {
+			git_tracker.refresh_status();
 		});
 		bridge.set_dirty_callback([this](const String &p_path, bool p_dirty) {
 			if (status_label) {
