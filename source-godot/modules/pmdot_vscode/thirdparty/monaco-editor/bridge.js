@@ -165,7 +165,17 @@
     });
   }
 
+  function closeDiffView() {
+    const monacoRoot = document.getElementById("monaco-root");
+    const diffWrapper = document.getElementById("diff-wrapper");
+    if (diffWrapper) diffWrapper.style.display = "none";
+    if (monacoRoot) monacoRoot.style.display = "block";
+    if (state.editor) state.editor.layout();
+  }
+  state.closeDiffView = closeDiffView;
+
   function switchTab(path) {
+    closeDiffView();
     const tab = state.openTabs.get(path);
     if (!tab || !state.editor) return;
     state.currentPath = path;

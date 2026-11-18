@@ -26,17 +26,31 @@
 
   function openSideBySideDiff(params) {
     if (typeof monaco === "undefined") return;
-    const root = document.getElementById("monaco-root");
+    const monacoRoot = document.getElementById("monaco-root");
+    const diffWrapper = document.getElementById("diff-wrapper");
+    const diffRoot = document.getElementById("diff-root");
+    const diffTitle = document.getElementById("diff-title");
+    if (!diffRoot || !diffWrapper) return;
+
+    if (monacoRoot) monacoRoot.style.display = "none";
+    diffWrapper.style.display = "flex";
+    if (diffTitle) diffTitle.textContent = "Diff: " + (params.path || "");
+
     if (!diffEditor) {
-      diffEditor = monaco.editor.createDiffEditor(root, {
+      diffEditor = monaco.editor.createDiffEditor(diffRoot, {
         theme: "pmdot-vscode-dark",
         automaticLayout: true,
         renderSideBySide: true
       });
+      const closeBtn = document.getElementById("btn-close-diff");
+      if (closeBtn && IDE.closeDiffView) {
+        closeBtn.addEventListener("click", IDE.closeDiffView);
+      }
     }
     const origModel = monaco.editor.createModel(params.original || "", params.language || "plaintext");
     const modModel = monaco.editor.createModel(params.modified || "", params.language || "plaintext");
     diffEditor.setModel({ original: origModel, modified: modModel });
+    diffEditor.layout();
   }
 
   function updateBadges() {

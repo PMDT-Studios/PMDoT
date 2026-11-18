@@ -91,6 +91,12 @@
     }
     .crumb-sep { display: inline-flex; opacity: 0.5; }
     #monaco-root { flex: 1; width: 100%; min-height: 0; }
+    #diff-wrapper { flex: 1; width: 100%; min-height: 0; display: none; flex-direction: column; }
+    #diff-banner {
+      height: 26px; background: #2d2d2d; border-bottom: 1px solid #1e1e1e;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 12px;
+    }
+    #diff-root { flex: 1; width: 100%; min-height: 0; }
     #bottom-panel {
       height: 190px; background: #1e1e1e; border-top: 1px solid #333333;
       display: none; flex-direction: column;
@@ -169,6 +175,13 @@
         <div id="tab-bar"></div>
         <div id="breadcrumbs"></div>
         <div id="monaco-root"></div>
+        <div id="diff-wrapper">
+          <div id="diff-banner">
+            <span id="diff-title">Diff View</span>
+            <button id="btn-close-diff" class="icon-btn secondary">Close Diff</button>
+          </div>
+          <div id="diff-root"></div>
+        </div>
         <div id="bottom-panel">
           <div id="bottom-tabs">
             <div id="bottom-tab-list"></div>

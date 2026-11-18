@@ -123,10 +123,14 @@ void VSCodeGitTracker::refresh_status() {
 			int dots = b.find("...");
 			branch = dots >= 0 ? b.substr(0, dots) : b;
 		} else if (line.length() >= 4) {
+			String rel_path = line.substr(3).strip_edges();
+			if (rel_path.begins_with("\"") && rel_path.ends_with("\"") && rel_path.length() >= 2) {
+				rel_path = rel_path.substr(1, rel_path.length() - 2).c_unescape();
+			}
 			Dictionary item;
 			item["index"] = line.substr(0, 1);
 			item["worktree"] = line.substr(1, 1);
-			item["path"] = line.substr(3).strip_edges();
+			item["path"] = rel_path;
 			changes.push_back(item);
 		}
 	}
