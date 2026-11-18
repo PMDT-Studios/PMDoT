@@ -36,7 +36,7 @@ String VSCodeLSPManager::get_server_command(LanguageTarget p_lang) const {
 Dictionary VSCodeLSPManager::build_theme_config() const {
 	Dictionary cfg;
 	EditorSettings *es = EditorSettings::get_singleton();
-	cfg["theme"] = es ? es->get("pmdot/vscode/theme") : String("vs-dark");
+	cfg["theme"] = es ? String(es->get("pmdot/vscode/theme")) : String("vs-dark");
 	cfg["fontSize"] = es ? int(es->get("pmdot/vscode/font_size")) : 14;
 	cfg["minimap"] = es ? bool(es->get("pmdot/vscode/minimap_enabled")) : true;
 	cfg["fontLigatures"] = es ? bool(es->get("pmdot/vscode/font_ligatures")) : true;
