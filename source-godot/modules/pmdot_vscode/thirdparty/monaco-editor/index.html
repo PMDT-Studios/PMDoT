@@ -16,18 +16,25 @@
     #ide-shell { display: flex; flex-direction: column; width: 100%; height: 100%; }
     #ide-main { display: flex; flex: 1; min-height: 0; }
     #activity-bar {
-      width: 44px; background: #333333; display: flex; flex-direction: column;
-      align-items: center; padding-top: 8px; gap: 8px; border-right: 1px solid #252526;
+      width: 48px; background: #333333; display: flex; flex-direction: column;
+      align-items: center; padding-top: 6px; gap: 4px; border-right: 1px solid #252526;
+      user-select: none;
     }
     .act-btn {
-      width: 34px; height: 34px; background: transparent; border: none; color: #858585;
-      cursor: pointer; border-radius: 4px; font-size: 16px; display: flex;
-      align-items: center; justify-content: center;
+      position: relative; width: 48px; height: 42px; background: transparent; border: none;
+      color: #858585; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      border-left: 2px solid transparent;
     }
-    .act-btn.active, .act-btn:hover { color: #ffffff; background: #2a2d2e; }
+    .act-btn:hover { color: #ffffff; }
+    .act-btn.active { color: #ffffff; border-left-color: #007acc; }
+    .act-badge {
+      position: absolute; bottom: 5px; right: 7px; min-width: 15px; height: 15px;
+      padding: 0 4px; border-radius: 8px; background: #007acc; color: #fff;
+      font-size: 10px; font-weight: 700; display: none; align-items: center; justify-content: center;
+    }
     #sidebar {
-      width: 240px; background: #252526; border-right: 1px solid #1e1e1e;
-      display: flex; flex-direction: column; min-width: 160px;
+      width: 260px; background: #252526; border-right: 1px solid #1e1e1e;
+      display: flex; flex-direction: column; min-width: 180px;
     }
     #sidebar-header {
       padding: 8px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
@@ -36,82 +43,145 @@
     }
     .icon-btn {
       background: #0e639c; color: #fff; border: none; border-radius: 3px;
-      padding: 2px 7px; cursor: pointer; font-size: 11px;
+      padding: 3px 8px; cursor: pointer; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;
     }
     .icon-btn:hover { background: #1177bb; }
-    #sidebar-content { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .icon-btn.secondary { background: #3c3c3c; color: #cccccc; }
+    .icon-btn.secondary:hover { background: #4c4c4c; }
+    #sidebar-content { flex: 1; overflow-y: auto; padding: 4px 0; min-height: 0; }
+    #outline-section {
+      border-top: 1px solid #1e1e1e; max-height: 180px; display: flex; flex-direction: column;
+    }
+    #outline-header {
+      padding: 5px 10px; font-size: 11px; font-weight: 600; color: #bbbbbb;
+      background: #252526; text-transform: uppercase;
+    }
+    #outline-list { overflow-y: auto; flex: 1; padding: 2px 0; }
     .tree-item {
-      padding: 4px 12px; cursor: pointer; white-space: nowrap; overflow: hidden;
-      text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px; cursor: pointer; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; font-size: 12px;
     }
     .tree-item:hover { background: #2a2d2e; }
     .tree-item.active { background: #37373d; color: #ffffff; }
-    .lang-badge {
-      font-size: 10px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
-      background: #3c3c3c; color: #4ec9b0;
+    .sidebar-input {
+      width: calc(100% - 16px); margin: 6px 8px; padding: 5px 8px; background: #3c3c3c;
+      color: #fff; border: 1px solid #454545; border-radius: 2px; outline: none; font-size: 12px;
     }
-    #search-box { width: calc(100% - 16px); margin: 8px; padding: 5px 8px; background: #3c3c3c; color: #fff; border: 1px solid #555; border-radius: 2px; }
+    .sidebar-input:focus { border-color: #007acc; }
+    .section-title {
+      padding: 6px 10px 3px; font-size: 11px; font-weight: 700; color: #8c8c8c;
+      text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;
+    }
     #editor-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     #tab-bar {
       height: 35px; background: #252526; display: flex; align-items: center;
       overflow-x: auto; border-bottom: 1px solid #1e1e1e;
     }
     .editor-tab {
-      height: 100%; padding: 0 12px; display: flex; align-items: center; gap: 8px;
+      height: 100%; padding: 0 10px; display: flex; align-items: center; gap: 6px;
       background: #2d2d2d; color: #969696; cursor: pointer; border-right: 1px solid #1e1e1e;
-      font-size: 12px;
+      font-size: 12px; white-space: nowrap;
     }
     .editor-tab.active { background: #1e1e1e; color: #ffffff; border-top: 2px solid #007acc; }
-    .tab-close { font-size: 12px; opacity: 0.7; }
-    .tab-close:hover { opacity: 1; color: #f48771; }
+    .tab-close { display: inline-flex; align-items: center; opacity: 0.6; padding: 2px; border-radius: 3px; }
+    .tab-close:hover { opacity: 1; background: #3c3c3c; color: #f48771; }
+    #breadcrumbs {
+      height: 22px; background: #1e1e1e; border-bottom: 1px solid #252526;
+      display: flex; align-items: center; gap: 4px; padding: 0 12px; font-size: 11px; color: #a9a9a9;
+    }
+    .crumb-sep { display: inline-flex; opacity: 0.5; }
     #monaco-root { flex: 1; width: 100%; min-height: 0; }
+    #bottom-panel {
+      height: 190px; background: #1e1e1e; border-top: 1px solid #333333;
+      display: none; flex-direction: column;
+    }
+    #bottom-panel.open { display: flex; }
+    #bottom-tabs {
+      height: 30px; background: #252526; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #1e1e1e;
+    }
+    #bottom-tab-list { display: flex; gap: 12px; height: 100%; }
+    .bottom-tab {
+      background: transparent; border: none; color: #969696; font-size: 11px;
+      text-transform: uppercase; cursor: pointer; height: 100%; border-bottom: 2px solid transparent;
+    }
+    .bottom-tab.active { color: #ffffff; border-bottom-color: #007acc; }
+    #bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 12px; }
     #status-bar {
       height: 22px; background: #007acc; color: #ffffff; font-size: 11px;
-      display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
     }
+    .status-group { display: flex; align-items: center; gap: 12px; }
+    .status-btn { cursor: pointer; background: transparent; border: none; color: #fff; font-size: 11px; padding: 0 4px; }
+    .status-btn:hover { background: rgba(255,255,255,0.15); }
     #quick-open-overlay {
-      position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
-      width: 480px; background: #252526; border: 1px solid #454545;
+      position: fixed; top: 36px; left: 50%; transform: translateX(-50%);
+      width: 520px; background: #252526; border: 1px solid #454545;
       box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 999; display: none;
     }
     #quick-open-input {
       width: 100%; padding: 8px 10px; background: #3c3c3c; color: #fff;
       border: none; outline: none; font-size: 13px;
     }
-    #quick-open-list { max-height: 260px; overflow-y: auto; }
+    #quick-open-list { max-height: 280px; overflow-y: auto; }
   </style>
 </head>
 <body>
   <div id="ide-shell">
     <div id="ide-main">
       <div id="activity-bar">
-        <button class="act-btn active" data-view="explorer" title="Explorer (Files)">📁</button>
-        <button class="act-btn" data-view="search" title="Search in Files (Ctrl+Shift+F)">🔍</button>
+        <button class="act-btn active" data-view="explorer" title="Explorer (Files)"></button>
+        <button class="act-btn" data-view="search" title="Search in Files (Ctrl+Shift+F)"></button>
+        <button class="act-btn" data-view="scm" title="Source Control (Git & Graph)"><span class="act-badge" id="badge-scm">0</span></button>
+        <button class="act-btn" data-view="debug" title="Run and Debug"></button>
+        <button class="act-btn" data-view="testing" title="Testing (Unit & Integration)"></button>
+        <button class="act-btn" data-view="extensions" title="Extensions & GameDev Tools"></button>
+        <button class="act-btn" data-view="remote" title="Remote Explorer, Logs & Docs"></button>
+        <button class="act-btn" data-view="scene-graph" title="Scene Node & Script Graph"></button>
       </div>
       <div id="sidebar">
         <div id="sidebar-header">
           <span id="sidebar-title">EXPLORER</span>
-          <button id="btn-new-file" class="icon-btn" title="New Code File">+ File</button>
+          <button id="btn-new-file" class="icon-btn" title="New Code File"></button>
         </div>
         <div id="sidebar-content"></div>
+        <div id="outline-section">
+          <div id="outline-header">OUTLINE</div>
+          <div id="outline-list"></div>
+        </div>
       </div>
       <div id="editor-area">
         <div id="tab-bar"></div>
+        <div id="breadcrumbs"></div>
         <div id="monaco-root"></div>
+        <div id="bottom-panel">
+          <div id="bottom-tabs">
+            <div id="bottom-tab-list"></div>
+            <button id="btn-close-bottom" class="icon-btn secondary">Close</button>
+          </div>
+          <div id="bottom-content"></div>
+        </div>
       </div>
     </div>
     <div id="status-bar">
-      <span id="status-left">PMDoT Code IDE (Monaco)</span>
-      <span id="status-right">Ln 1, Col 1 | UTF-8 | plaintext</span>
+      <div class="status-group">
+        <span id="status-branch">main</span>
+        <button id="btn-toggle-panel" class="status-btn" title="Toggle Bottom Panel">Panel</button>
+        <button id="btn-cmd-palette" class="status-btn" title="Command Palette (Ctrl+Shift+P)">Commands</button>
+      </div>
+      <div class="status-group">
+        <span id="status-right">Ln 1, Col 1 | UTF-8 | plaintext</span>
+      </div>
     </div>
   </div>
 
   <div id="quick-open-overlay">
-    <input id="quick-open-input" type="text" placeholder="Go to file by name (Ctrl+P)..." />
+    <input id="quick-open-input" type="text" placeholder="Type file name or '>' for commands..." />
     <div id="quick-open-list"></div>
   </div>
 
   <script src="vs/loader.js"></script>
+  <script src="icons.js"></script>
   <script src="bridge.js"></script>
 </body>
 </html>
