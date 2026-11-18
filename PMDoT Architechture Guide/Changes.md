@@ -21,7 +21,8 @@
 | DAP Debugger | ✅ | Added `VSCodeDAPClient` and breakpoint glyph margin decorations. |
 | Error Lens | ✅ | Added `VSCodeDiagnosticHub` and debounced (150ms) inline diagnostic rendering. |
 | Performance CodeLens | ✅ | Added `VSCodeCodeLensProfiler` (1Hz polling) displaying method CPU metrics. |
-| Git Diff & Gutter | ✅ | Added `VSCodeGitTracker` and Monaco side-by-side Diff Editor integration. |
+| Git Diff & Graph | ✅ | Added `VSCodeGitTracker`, Source Control view (stage/commit/diff), and interactive SVG Git Graph. |
+| Remote, Docs & DevEx | ✅ | Added `VSCodeDevExHub` (live logs, C#/C++/Godot/Google search, `.tscn` Scene Node Graph, Todo Tree) and `VSCodeTestRunner` (Unit & Integration tests). |
 
 ---
 
