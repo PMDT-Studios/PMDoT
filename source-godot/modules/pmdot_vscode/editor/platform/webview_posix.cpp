@@ -1,53 +1,62 @@
-#ifndef WINDOWS_ENABLED
+#ifdef LINUX_ENABLED
 
-#include "webview_backend.h"
+#include "webview_posix.h"
 
-class WebViewPosix : public WebViewBackend {
-private:
-	bool ready = false;
-	bool visible = false;
-	Rect2i current_bounds;
-	String pending_url;
-	MessageCallback message_callback;
+#include "core/io/dir_access.h"
+#include "core/os/os.h"
 
-public:
-	virtual bool initialize(int64_t p_native_window_handle, const Rect2i &p_bounds) override {
-		current_bounds = p_bounds;
-		ready = (p_native_window_handle != 0);
-		return ready;
+#include <gdk/gdkx.h>
+#include <gtk/gtk.h>
+#include <webkit2/webkit2.h>
+#include <X11/Xlib.h>
+
+static String _resolve_monaco_directory() {
+	String exe_dir = OS::get_singleton()->get_executable_path().get_base_dir();
+	String packaged = exe_dir.path_join("pmdot_vscode_ide");
+	if (DirAccess::exists(packaged)) {
+		return packaged;
 	}
-
-	virtual void shutdown() override {
-		ready = false;
+	String dev_path = exe_dir.get_base_dir().path_join("modules/pmdot_vscode/thirdparty/monaco-editor");
+	if (DirAccess::exists(dev_path)) {
+		return dev_path;
 	}
-
-	virtual void set_bounds(const Rect2i &p_bounds) override {
-		current_bounds = p_bounds;
+	String cwd_path = OS::get_singleton()->get_resource_dir().path_join("../source-godot/modules/pmdot_vscode/thirdparty/monaco-editor");
+	if (DirAccess::exists(cwd_path)) {
+		return cwd_path;
 	}
-
-	virtual void set_visible(bool p_visible) override {
-		visible = p_visible;
-	}
-
-	virtual void navigate(const String &p_url) override {
-		pending_url = p_url;
-	}
-
-	virtual void execute_script(const String &p_js) override {}
-
-	virtual void post_message(const String &p_json) override {}
-
-	virtual void set_message_callback(MessageCallback p_callback) override {
-		message_callback = p_callback;
-	}
-
-	virtual bool is_ready() const override {
-		return ready;
-	}
-};
-
-WebViewBackend *WebViewBackend::create() {
-	return memnew(WebViewPosix);
+	return dev_path;
 }
 
-#endif // !WINDOWS_ENABLED
+WebViewLinux::~WebViewLinux(){
+	shutdown();
+}
+
+bool WebViewLinux::initialize(int64_t p_native_window_handle, const Rect2i &p_bounds) {
+}
+
+void WebViewLinux::shutdown() {
+}
+
+void WebViewLinux::set_bounds(const Rect2i &p_bounds) {
+}
+
+void WebViewLinux::set_visible(bool p_visible) {
+}
+
+void WebViewLinux::navigate(const String &p_url) {
+}
+
+void WebViewLinux::execute_script(const String &p_js) {
+}
+
+void WebViewLinux::post_message(const String &p_json) {
+}
+
+void WebViewLinux::set_message_callback(MessageCallback p_callback) {
+}
+
+WebViewBackend *WebViewBackend::create() {
+	return memnew(WebViewLinux);
+}
+
+#endif //lINUX_ENABLED
