@@ -23,3 +23,11 @@ declare module "react" {
         }
     }
 }
+
+declare global {
+    var nativeCreateElement: (
+        type: string,
+        props: string
+    ) => void;
+
+}

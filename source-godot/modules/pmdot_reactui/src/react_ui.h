@@ -8,9 +8,6 @@ class ReactUI : public Control{
 
 
 protected:
-    void _ready() override;
-    void _process(double delta) override;
-    void _draw() override;
     static void _bind_methods();
 
 public:
