@@ -34,7 +34,7 @@ WebViewLinux::~WebViewLinux(){
 bool WebViewLinux::initialize(int64_t p_native_window_handle, const Rect2i &p_bounds) {
  	Window parent = static_cast<Window>(p_native_window_handle);
 	
-	if(!parent || !IsWindow(parent)) return false;
+	if(!parent) return false;
 	
 	parent_xid = parent;
 	current_bounds = p_bounds;
@@ -45,40 +45,50 @@ bool WebViewLinux::initialize(int64_t p_native_window_handle, const Rect2i &p_bo
 
 	xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
 
-	GdkWindow *parent_gdk = gdk_x11_window_foreign_new_for_display(gdk_display, parent_xid);
-
 	if(!parent_gdk) return false;
 
-	GdkWindowAttr attr = {};
-	attr.window_type = GDK_WINDOW_CHILD;
-	attr.x = p_bounds.position.x;
-	arrt.y = p_bounds.position.y;
-	attr.width = MAX(1, p_bounds.size.x);
-	attr.height = MAX(1, p_bounds.size.y);
-	attr.wclass = GDK_INPUT_OUTPUT;
-	attr.event_mask = GDK_EXPOSURE_MASK;
+	
+	plug = gtk_plug_new(parent_xid);
 
-	GdkWindow *host = gdk_window_new(
-		parent_gdk,
-		&attr,
-		GDK_WA_X | GDK_WA_Y
-	);
+	if(!plug) return false;
 
-	g_object_unref(parent_gdk);
+	webview = webkit_web_view_new();
 
-    if (!host) {
+    if (!webview) {
+        gtk_widget_destroy(plug);
+        plug = nullptr;
         return false;
     }
 
-    host_gdk = host;
+	gtk_container_add(GTK_CONTAINER(plug), webview);
 
-    host_xid = gdk_x11_window_get_xid(host_gdk);
+	gtk_widget_set_size_request(
+        webview,
+        MAX(1, p_bounds.size.x),
+        MAX(1, p_bounds.size.y)
+    );
 
+	g_signal_connect(
+        webview,
+        "load-changed",
+        G_CALLBACK(+[](WebKitWebView *, WebKitLoadEvent event, gpointer user_data) {
+            WebViewLinux *self = static_cast<WebViewLinux *>(user_data);
+
+            if (event == WEBKIT_LOAD_FINISHED) {
+                self->ready = true;
+            }
+        }),
+        this
+    );
+
+	ready = false;
+
+	entra aqui 
 	
+	gtk_widget_show_all(plug);
 
-	
-    gdk_window_show(host_gdk);
-	ready = true;
+	webkit_web_view_load_uri(WEBKIT_WEB_VIEW(webview), "https://pmdot.ide/index.html");
+
 	return ready;
 }
 

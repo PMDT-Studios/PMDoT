@@ -19,6 +19,8 @@ private:
 	GdkWindow *host_gdk = nullptr;
 	GtkWidget *webview = nullptr;
 
+	GtkWidget *plug = nullptr;
+
 	bool ready = false;
 	bool visible = false;
 	Rect2i current_bounds;
