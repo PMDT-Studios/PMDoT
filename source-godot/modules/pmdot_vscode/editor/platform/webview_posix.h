@@ -13,9 +13,10 @@ private:
 
 	unsigned long host_xid = 0;
 	unsigned long parent_xid = 0;
+
 	void *xdisplay = nullptr;
 
-	GtkWidget *plug = nullptr;
+	GdkWindow *host_gdk = nullptr;
 	GtkWidget *webview = nullptr;
 
 	bool ready = false;
