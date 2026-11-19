@@ -9,6 +9,7 @@
 #include "scene/gui/separator.h"
 #include "core/input/input_event.h"
 #include "aseprite_icons.h"
+#include "core/string/print_string.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
@@ -182,6 +183,18 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 	pages_bar->add_child(btn_delete_page);
 	btn_delete_page->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_delete_page_pressed));
 
+	// --- FPS AND PLAY ANIMATION ---
+	animation_fps_line_edit = memnew(LineEdit);
+	animation_fps_line_edit->set_text("FPS");
+	animation_fps_line_edit->set_custom_minimum_size(Vector2(100, 0));
+	pages_bar->add_child(animation_fps_line_edit);
+
+	btn_play_animation = memnew(Button);
+	btn_play_animation->set_tooltip_text("Play the animation / see in canvas");
+	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
+	pages_bar->add_child(btn_play_animation);
+	btn_play_animation->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_play_animation_pressed));
+
 	// --- Main Workspace Body ---
 	workspace_body = memnew(HBoxContainer);
 	workspace_body->set_v_size_flags(SIZE_EXPAND_FILL);
@@ -311,6 +324,7 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 
 	initialize_workspace(64, 64);
 	_update_tool_buttons();
+	set_process(true);
 }
 
 EditorAsepriteWorkspace::~EditorAsepriteWorkspace() {}
@@ -321,6 +335,33 @@ void EditorAsepriteWorkspace::_bind_methods() {
 }
 
 void EditorAsepriteWorkspace::_notification(int p_what) {
+	if(p_what == NOTIFICATION_PROCESS){
+		if (!is_animation || pages.is_empty()) {
+			print_line("entrou if process");
+			return;
+		}
+
+		time_accumulator += get_process_delta_time() * 1000.0;
+
+		bool frame_changed = false;
+		print_line("time accumulaor", time_accumulator);
+		while(time_accumulator >= frame_duration_ms){
+			time_accumulator -= frame_duration_ms;
+
+			print_line("animation index 1", animation_index);
+			animation_index++;
+			print_line("animation index 2", animation_index);
+			if(animation_index >= pages.size()){
+				animation_index = 0;
+			}
+
+			frame_changed = true;
+		}
+		if(frame_changed){
+			print_line("entrou frame changed");
+			_update_canvas_page(animation_index);
+		}
+	}
 }
 
 void EditorAsepriteWorkspace::_create_checkerboard_texture() {
@@ -357,6 +398,14 @@ void EditorAsepriteWorkspace::_update_canvas_rect_size() {
 	if (canvas_texture_rect) {
 		canvas_texture_rect->set_custom_minimum_size(sz);
 	}
+}
+
+void EditorAsepriteWorkspace::_update_canvas_page(int p_index){
+	current_page_index = p_index;
+	canvas_image = pages[current_page_index];
+
+	update_canvas_texture();
+	_update_pages_ui();
 }
 
 void EditorAsepriteWorkspace::_setup_palette() {
@@ -548,6 +597,7 @@ void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) 
 
 	if (mb.is_valid()){
 		if(mb->get_button_index() == MouseButton::LEFT){
+			if(is_animation == true) return;
 			if (mb->is_pressed()) {
 				_save_undo_state();
 				is_drawing = true;
@@ -698,6 +748,32 @@ void EditorAsepriteWorkspace::_on_quick_size_selected(int p_index) {
 		case 6: canvas_w_spin->set_value(256); canvas_h_spin->set_value(256); break;
 		default: break;
 	}
+}
+
+void EditorAsepriteWorkspace::_on_play_animation_pressed(){
+	if(is_animation){
+		return;
+	}
+
+	String fps_text = animation_fps_line_edit->get_text();
+
+	if(!fps_text.is_valid_int()){
+		print_line("STRING NAO VALIDA FPS TEXT");
+		return;
+	}
+
+	int animation_fps_int = fps_text.to_int();
+
+	if(!pages.is_empty() && animation_fps_int > 0){
+		frame_duration_ms = 1000.0 / animation_fps_int;
+		is_animation = true;
+		is_drawing = false;
+		btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::STOP));
+		return;
+	}
+
+	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
+	is_animation = false;
 }
 
 void EditorAsepriteWorkspace::_on_add_page_pressed() {

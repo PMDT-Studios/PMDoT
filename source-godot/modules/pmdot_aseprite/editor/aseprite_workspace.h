@@ -54,6 +54,8 @@ private:
 	Button *btn_add_page = nullptr;
 	Button *btn_duplicate_page = nullptr;
 	Button *btn_delete_page = nullptr;
+	Button *btn_play_animation = nullptr;
+	LineEdit *animation_fps_line_edit = nullptr;
 
 	Ref<Image> canvas_image;
 	Ref<ImageTexture> canvas_texture;
@@ -65,6 +67,10 @@ private:
 	float zoom_level = 8.0f;
 
 	bool is_drawing = false;
+	bool is_animation = false;
+	int animation_index = 0;
+	float frame_duration_ms = 0.0;
+	float time_accumulator = 0.0;
 	Vector2i last_mouse_px = Vector2i(-1, -1);
 
 	Button *btn_pencil = nullptr;
@@ -133,6 +139,8 @@ protected:
 	void _on_delete_page_pressed();
 	void _select_page(int p_index);
 	void _update_pages_ui();
+	void _update_canvas_page(int p_index);
+	void _on_play_animation_pressed();
 
 	void _save_undo_state();
 	void _undo();
