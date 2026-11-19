@@ -1,0 +1,1 @@
+export const { Text, View, Image, Scroll, CustomShader } = (globalThis as any).__pmdot.ui;
