@@ -10,6 +10,7 @@ Status Key: ✅ Active · 🟣 Custom PMDoT · ⛔ Disabled · 🗑️ Purged / 
 |---|---|---|---|
 | `pmdot_aseprite` | 🟣 ✅ | Embedded native Aseprite workspace in the editor, real-time SIMD pixel conversion pipeline, and Pixel Art presets | `register_types.cpp`, `pmdot_pixel_pipeline.cpp/.h`, `editor/aseprite_workspace.cpp/.h`, `editor/pixel_art_presets.cpp/.h`, `thirdparty/aseprite` |
 | `pmdot_reactui` | 🟣 ⛔ | Embedded native React as a language for UI creation | `register_types.cpp`, `src/js_bindings.cpp/.h`, `src/react_ui.cpp/.h`, `src/js_runtime.cpp/.h` |
+| `pmdot_vscode` | 🟣 ✅ | Embedded Monaco/VS Code IDE with LSP, DAP debugging, Error Lens, Performance CodeLens, and Git Diff | `register_types.cpp`, `editor/vscode_editor_dock.cpp/.h`, `editor/vscode_bridge.cpp/.h`, `thirdparty/monaco-editor` |
 
 For in-depth technical details, see `architecture-guidelines/aseprite_architecture_guide.md`.
 

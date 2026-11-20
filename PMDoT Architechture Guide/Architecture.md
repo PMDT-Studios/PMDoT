@@ -67,11 +67,11 @@ PMDoT is exclusively engineered for desktop workstations and desktop game distri
 
 `BUILD_SEGMENTS` in `pmdot.py` segments `source-godot` into 10 independent verification zones. Each computes a composite SHA256 hash across tracked source file extensions (`.cpp`, `.c`, `.h`, `.hpp`, `.py`, `.inc`, `.glsl`):
 
-`godot_core` · `godot_scene` · `godot_servers` · `godot_editor` · `godot_drivers` · `godot_platform` · `godot_main` · `godot_thirdparty` · `godot_modules` (excluding `pmdot_*`) · `pmdot_aseprite`
+`godot_core` · `godot_scene` · `godot_servers` · `godot_editor` · `godot_drivers` · `godot_platform` · `godot_main` · `godot_thirdparty` · `godot_modules` (excluding `pmdot_*`) · `pmdot_aseprite` · `pmdot_reactui` · `pmdot_vscode`
 
 Base SCons invocation:
 ```bash
-scons platform=<os> target=editor disable_exceptions=no custom_modules=modules/pmdot_aseprite module_gdscript_enabled=no module_jsonrpc_enabled=no -j8
+scons platform=<os> target=editor disable_exceptions=no custom_modules=modules/pmdot_aseprite,modules/pmdot_vscode module_gdscript_enabled=no module_jsonrpc_enabled=no -j8
 ```
 
 ---

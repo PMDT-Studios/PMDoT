@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-11-15 · CHG-006 · Embedded VS Code (Monaco) Script IDE · `COMPLETED`
+
+**Reason:** Replace legacy script editing with an embedded Monaco Editor IDE (`pmdot_vscode`) accelerated by native platform WebViews (WebView2 on Windows, POSIX WebKit fallback) with pre-warming (<16ms tab switch), LSP integration, DAP debugging, inline Error Lens diagnostics, 1Hz Performance CodeLens, and Git diff visualization.
+
+**Execution Scope (by Subsystem):**
+
+| Subsystem | Status | Modification |
+|---|---|---|
+| Module & Build | ✅ | Added `source-godot/modules/pmdot_vscode` (with vendorized `monaco-editor` 0.57.0 and `WebView2` SDK) and registered `pmdot_vscode` segment in `pmdot.py`. |
+| Editor Integration | ✅ | `source-godot/editor/editor_node.cpp`: Guarded `ScriptEditorPlugin` with `#ifndef MODULE_PMDOT_VSCODE_ENABLED`, replacing the legacy `"Script"` tab with the `"Code"` IDE tab. |
+| Native WebView | ✅ | Implemented `WebViewBackend` for Windows (`WebView2`/Win32) and POSIX with pre-warmed dock initialization. |
+| Monaco & IPC Bridge | ✅ | Implemented `VSCodeBridge` C++ <-> JS messaging for `open_script`, `save_script`, and dirty tracking. |
+| Language & LSP | ✅ | Added `VSCodeLSPManager` and `EditorSettings` for C#, C++, Java, and Markdown. |
+| DAP Debugger | ✅ | Added `VSCodeDAPClient` and breakpoint glyph margin decorations. |
+| Error Lens | ✅ | Added `VSCodeDiagnosticHub` and debounced (150ms) inline diagnostic rendering. |
+| Performance CodeLens | ✅ | Added `VSCodeCodeLensProfiler` (1Hz polling) displaying method CPU metrics. |
+| Git Diff & Graph | ✅ | Added `VSCodeGitTracker`, Source Control view (stage/commit/diff), and interactive SVG Git Graph. |
+| Remote, Docs & DevEx | ✅ | Added `VSCodeDevExHub` (live logs, C#/C++/Godot/Google search, `.tscn` Scene Node Graph, Todo Tree) and `VSCodeTestRunner` (Unit & Integration tests). |
+
+---
+
 ## 2026-11-12 · CHG-005 · Added React support for building UI in Godot · `IN PROGRESS`
 
 **Reason:** PMDoT introduces React as a declarative UI development layer, allowing developers to build and manage user interfaces using JSX/TSX instead of manually constructing UI nodes through code. By integrating QuickJS as JavaScript runtime and implementing a custom React Renderer, React components are converting into native C++ Ui Tree managed by PMDoT.   

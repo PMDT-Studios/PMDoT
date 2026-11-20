@@ -33,6 +33,7 @@
 
 #include "core/object/script_language.h"
 #include "editor/plugins/editor_plugin.h"
+#include "modules/modules_enabled.gen.h"
 #include "scene/gui/dialogs.h"
 #include "scene/gui/panel_container.h"
 #include "scene/resources/syntax_highlighter.h"
@@ -598,7 +599,11 @@ protected:
 
 public:
 	virtual String get_name() const override { return "Script"; }
+#ifdef MODULE_PMDOT_VSCODE_ENABLED
+	bool has_main_screen() const override { return false; }
+#else
 	bool has_main_screen() const override { return true; }
+#endif
 	virtual void edit(Object *p_object) override;
 	virtual bool handles(Object *p_object) const override;
 	virtual void make_visible(bool p_visible) override;

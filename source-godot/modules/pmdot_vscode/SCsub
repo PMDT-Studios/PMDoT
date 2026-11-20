@@ -1,0 +1,33 @@
+# SCsub for pmdot_vscode module in PMDoT Engine
+
+Import("env")
+
+env_vscode = env.Clone()
+env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/editor"])
+
+sources = [
+    "register_types.cpp",
+]
+
+if env.editor_build:
+    sources += [
+        "editor/vscode_editor_dock.cpp",
+        "editor/vscode_bridge.cpp",
+        "editor/lsp/vscode_lsp_manager.cpp",
+        "editor/debugger/vscode_dap_client.cpp",
+        "editor/debugger/vscode_test_runner.cpp",
+        "editor/diagnostics/vscode_diagnostic_hub.cpp",
+        "editor/profiler/vscode_codelens_profiler.cpp",
+        "editor/vcs/vscode_git_tracker.cpp",
+        "editor/devex/vscode_devex_hub.cpp",
+        "editor/platform/webview_windows.cpp",
+        "editor/platform/webview_posix.cpp",
+    ]
+
+if env["platform"] == "windows":
+    env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/thirdparty/webview2/include"])
+    if env.msvc:
+        webview2_lib = env.File("#modules/pmdot_vscode/thirdparty/webview2/x64/WebView2LoaderStatic.lib").abspath
+        env.Append(LINKFLAGS=[webview2_lib, "version.lib"])
+
+env_vscode.add_source_files(env.modules_sources, sources)

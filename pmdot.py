@@ -585,6 +585,11 @@ BUILD_SEGMENTS = {
         "scons_target": "modules/pmdot_reactui",
         "description": "PMDoT ReactUI Module"
     },
+    "pmdot_vscode": {
+        "path": os.path.join("modules", "pmdot_vscode"),
+        "scons_target": "modules/pmdot_vscode",
+        "description": "PMDoT VS Code (Monaco) IDE Module",
+    },
 }
 
 SOURCE_EXTENSIONS = {".cpp", ".c", ".h", ".hpp", ".py", ".inc", ".glsl"}
@@ -967,13 +972,14 @@ def cmd_build(extra_args=None):
         f"platform={platform_target}",
         "target=editor",
         "disable_exceptions=no",
-        "custom_modules=modules/pmdot_aseprite",
+        "custom_modules=modules/pmdot_aseprite,modules/pmdot_vscode",
         "module_gdscript_enabled=no",
         "module_jsonrpc_enabled=no",
         "-j8",
     ]
-    if platform_target == "windows":
-        base_scons.append("vsproj=yes")
+    if "--vsproj" in clean_args and platform_target == "windows":
+        clean_args.remove("--vsproj")
+        base_scons.extend(["vsproj=yes", "vsproj_gen_only=no"])
     base_scons.extend(clean_args)
 
     build_start = time.time()

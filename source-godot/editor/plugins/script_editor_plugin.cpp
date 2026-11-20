@@ -4393,6 +4393,9 @@ void ScriptEditorPlugin::edit(Object *p_object) {
 }
 
 bool ScriptEditorPlugin::handles(Object *p_object) const {
+#ifdef MODULE_PMDOT_VSCODE_ENABLED
+	return false;
+#endif
 	if (Object::cast_to<TextFile>(p_object)) {
 		return true;
 	}
