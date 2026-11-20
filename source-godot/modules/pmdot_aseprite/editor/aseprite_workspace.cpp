@@ -339,27 +339,23 @@ void EditorAsepriteWorkspace::_bind_methods() {
 }
 
 void EditorAsepriteWorkspace::_notification(int p_what) {
-	if(p_what == NOTIFICATION_PROCESS){
-		if (!is_animation || pages.is_empty()) {
-			return;
-		}
-
-		time_accumulator += get_process_delta_time() * 1000.0;
-
-		bool frame_changed = false;
-		while(time_accumulator >= frame_duration_ms){
-			time_accumulator -= frame_duration_ms;
-
-			animation_index++;
-			if(animation_index >= pages.size()){
-				animation_index = 0;
+	switch (p_what) {
+		case NOTIFICATION_PROCESS: {
+			if (!is_animation || pages.size() <= 1 || frame_duration_ms <= 0.0) {
+				return;
 			}
 
-			frame_changed = true;
-		}
-		if(frame_changed){
-			_update_canvas_page(animation_index);
-		}
+			const double delta_ms = MIN(get_process_delta_time() * 1000.0, 250.0);
+			time_accumulator += delta_ms;
+
+			if (time_accumulator >= frame_duration_ms) {
+				const int steps = static_cast<int>(time_accumulator / frame_duration_ms);
+				time_accumulator = Math::fmod(time_accumulator, frame_duration_ms);
+
+				animation_index = (animation_index + steps) % pages.size();
+				_update_canvas_page(animation_index);
+			}
+		} break;
 	}
 }
 
