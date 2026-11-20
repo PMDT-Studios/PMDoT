@@ -8,6 +8,8 @@
 #include "scene/gui/margin_container.h"
 #include "scene/gui/separator.h"
 #include "core/input/input_event.h"
+#include "aseprite_icons.h"
+#include "core/string/print_string.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
@@ -181,6 +183,22 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 	pages_bar->add_child(btn_delete_page);
 	btn_delete_page->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_delete_page_pressed));
 
+	// --- FPS AND PLAY ANIMATION ---
+	animation_fps_line_edit = memnew(LineEdit);
+	animation_fps_line_edit->set_placeholder("FPS");
+	animation_fps_line_edit->set_custom_minimum_size(Vector2(100, 0));
+	pages_bar->add_child(animation_fps_line_edit);
+
+	btn_play_animation = memnew(Button);
+	btn_play_animation->set_tooltip_text("Play the animation / see in canvas");
+	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
+	pages_bar->add_child(btn_play_animation);
+	btn_play_animation->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_play_animation_pressed));
+
+	animation_status_label = memnew(Label);
+	animation_status_label->set_text("");
+	pages_bar->add_child(animation_status_label);
+
 	// --- Main Workspace Body ---
 	workspace_body = memnew(HBoxContainer);
 	workspace_body->set_v_size_flags(SIZE_EXPAND_FILL);
@@ -197,21 +215,25 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 
 	btn_pencil = memnew(Button);
 	btn_pencil->set_text("Pencil [P]");
+	btn_pencil->set_icon(_load_svg_icon(AsepriteIcons::PENCIL));
 	tools_panel->add_child(btn_pencil);
 	btn_pencil->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_PENCIL));
 
 	btn_eraser = memnew(Button);
 	btn_eraser->set_text("Eraser [E]");
+	btn_eraser->set_icon(_load_svg_icon(AsepriteIcons::ERASER));
 	tools_panel->add_child(btn_eraser);
 	btn_eraser->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_ERASER));
 
 	btn_picker = memnew(Button);
 	btn_picker->set_text("Picker [I]");
+	btn_picker->set_icon(_load_svg_icon(AsepriteIcons::PIPETTE));
 	tools_panel->add_child(btn_picker);
 	btn_picker->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_PICKER));
 
 	btn_fill = memnew(Button);
 	btn_fill->set_text("Bucket [G]");
+	btn_fill->set_icon(_load_svg_icon(AsepriteIcons::PAINT_BUCKET));
 	tools_panel->add_child(btn_fill);
 	btn_fill->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_tool_selected).bind(TOOL_FILL));
 
@@ -306,6 +328,7 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 
 	initialize_workspace(64, 64);
 	_update_tool_buttons();
+	set_process(true);
 }
 
 EditorAsepriteWorkspace::~EditorAsepriteWorkspace() {}
@@ -316,6 +339,24 @@ void EditorAsepriteWorkspace::_bind_methods() {
 }
 
 void EditorAsepriteWorkspace::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_PROCESS: {
+			if (!is_animation || pages.size() <= 1 || frame_duration_ms <= 0.0) {
+				return;
+			}
+
+			const double delta_ms = MIN(get_process_delta_time() * 1000.0, 250.0);
+			time_accumulator += delta_ms;
+
+			if (time_accumulator >= frame_duration_ms) {
+				const int steps = static_cast<int>(time_accumulator / frame_duration_ms);
+				time_accumulator = Math::fmod(time_accumulator, frame_duration_ms);
+
+				animation_index = (animation_index + steps) % pages.size();
+				_update_canvas_page(animation_index);
+			}
+		} break;
+	}
 }
 
 void EditorAsepriteWorkspace::_create_checkerboard_texture() {
@@ -331,6 +372,19 @@ void EditorAsepriteWorkspace::_create_checkerboard_texture() {
 	checkerboard_texture = ImageTexture::create_from_image(checker_img);
 }
 
+Ref<Texture2D> EditorAsepriteWorkspace::_load_svg_icon(const char *p_svg) {
+	Ref<Image> image;
+	image.instantiate();
+
+	Error err = image->load_svg_from_string(String::utf8(p_svg));
+	if (err != OK) {
+		ERR_PRINT("Failed to parse embedded SVG");
+		return Ref<Texture2D>();
+	}
+
+	return ImageTexture::create_from_image(image);
+}
+
 void EditorAsepriteWorkspace::_update_canvas_rect_size() {
 	Vector2 sz = Vector2(canvas_width * zoom_level, canvas_height * zoom_level);
 	if (canvas_bg_texture_rect) {
@@ -339,6 +393,14 @@ void EditorAsepriteWorkspace::_update_canvas_rect_size() {
 	if (canvas_texture_rect) {
 		canvas_texture_rect->set_custom_minimum_size(sz);
 	}
+}
+
+void EditorAsepriteWorkspace::_update_canvas_page(int p_index){
+	current_page_index = p_index;
+	canvas_image = pages[current_page_index];
+
+	update_canvas_texture();
+	_update_pages_ui();
 }
 
 void EditorAsepriteWorkspace::_setup_palette() {
@@ -521,28 +583,47 @@ void EditorAsepriteWorkspace::unhandled_key_input(const Ref<InputEvent> &p_event
 	}
 }
 
+void _gui_input(const Ref<InputEvent> &p_event){
+
+}
 void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) {
 	Ref<InputEventMouseButton> mb = p_event;
 	Ref<InputEventMouseMotion> mm = p_event;
 
-	if (mb.is_valid() && mb->get_button_index() == MouseButton::LEFT) {
-		if (mb->is_pressed()) {
-			_save_undo_state();
-			is_drawing = true;
-			Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
-			int px = Math::floor(local_pos.x / zoom_level);
-			int py = Math::floor(local_pos.y / zoom_level);
-			px = CLAMP(px, 0, canvas_width - 1);
-			py = CLAMP(py, 0, canvas_height - 1);
+	if (mb.is_valid()){
+		if(mb->get_button_index() == MouseButton::LEFT){
+			if(is_animation == true) return;
+			if (mb->is_pressed()) {
+				_save_undo_state();
+				is_drawing = true;
+				Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
+				int px = Math::floor(local_pos.x / zoom_level);
+				int py = Math::floor(local_pos.y / zoom_level);
+				px = CLAMP(px, 0, canvas_width - 1);
+				py = CLAMP(py, 0, canvas_height - 1);
 
-			_apply_tool_at(px, py);
-			last_mouse_px = Vector2i(px, py);
-			update_canvas_texture();
-		} else {
-			is_drawing = false;
-			last_mouse_px = Vector2i(-1, -1);
+				_apply_tool_at(px, py);
+				last_mouse_px = Vector2i(px, py);
+				update_canvas_texture();
+			} else {
+				is_drawing = false;
+				last_mouse_px = Vector2i(-1, -1);
+			}
+			return;
 		}
-	} else if (mm.is_valid()) {
+
+		if(mb->is_pressed()){
+			if (mb->get_button_index() == MouseButton::WHEEL_UP) {
+                _on_zoom_in();
+            } else if (mb->get_button_index() == MouseButton::WHEEL_DOWN) {
+                _on_zoom_out();
+            }
+		}
+
+		return;
+	}
+
+	if (mm.is_valid()) {
 		Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
 		int px = Math::floor(local_pos.x / zoom_level);
 		int py = Math::floor(local_pos.y / zoom_level);
@@ -662,6 +743,34 @@ void EditorAsepriteWorkspace::_on_quick_size_selected(int p_index) {
 		case 6: canvas_w_spin->set_value(256); canvas_h_spin->set_value(256); break;
 		default: break;
 	}
+}
+
+void EditorAsepriteWorkspace::_on_play_animation_pressed(){
+	if(is_animation){
+		is_animation = false;
+		btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
+		return;
+	}
+
+	String fps_text = animation_fps_line_edit->get_text();
+
+	if(!fps_text.is_valid_int() || fps_text.to_int() <= 0){
+		animation_status_label->set_text("Invalid FPS. Enter a positive integer.");
+		return;
+	}
+
+	if(pages.size() == 1){
+		animation_status_label->set_text("No frames available.");
+        return;
+	}
+
+	int fps = fps_text.to_int();
+	frame_duration_ms = 1000.0 / fps;
+	is_animation = true;
+	is_drawing = false;
+	animation_status_label->set_text("");
+	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::STOP));
+
 }
 
 void EditorAsepriteWorkspace::_on_add_page_pressed() {
