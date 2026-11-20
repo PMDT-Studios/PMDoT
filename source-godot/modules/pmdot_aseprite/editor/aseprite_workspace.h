@@ -55,6 +55,7 @@ private:
 	Button *btn_duplicate_page = nullptr;
 	Button *btn_delete_page = nullptr;
 	Button *btn_play_animation = nullptr;
+	Label *animation_status_label = nullptr;
 	LineEdit *animation_fps_line_edit = nullptr;
 
 	Ref<Image> canvas_image;

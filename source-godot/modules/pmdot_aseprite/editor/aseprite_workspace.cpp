@@ -185,7 +185,7 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 
 	// --- FPS AND PLAY ANIMATION ---
 	animation_fps_line_edit = memnew(LineEdit);
-	animation_fps_line_edit->set_text("FPS");
+	animation_fps_line_edit->set_placeholder("FPS");
 	animation_fps_line_edit->set_custom_minimum_size(Vector2(100, 0));
 	pages_bar->add_child(animation_fps_line_edit);
 
@@ -194,6 +194,10 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
 	pages_bar->add_child(btn_play_animation);
 	btn_play_animation->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_play_animation_pressed));
+
+	animation_status_label = memnew(Label);
+	animation_status_label->set_text("");
+	pages_bar->add_child(animation_status_label);
 
 	// --- Main Workspace Body ---
 	workspace_body = memnew(HBoxContainer);
@@ -337,20 +341,16 @@ void EditorAsepriteWorkspace::_bind_methods() {
 void EditorAsepriteWorkspace::_notification(int p_what) {
 	if(p_what == NOTIFICATION_PROCESS){
 		if (!is_animation || pages.is_empty()) {
-			print_line("entrou if process");
 			return;
 		}
 
 		time_accumulator += get_process_delta_time() * 1000.0;
 
 		bool frame_changed = false;
-		print_line("time accumulaor", time_accumulator);
 		while(time_accumulator >= frame_duration_ms){
 			time_accumulator -= frame_duration_ms;
 
-			print_line("animation index 1", animation_index);
 			animation_index++;
-			print_line("animation index 2", animation_index);
 			if(animation_index >= pages.size()){
 				animation_index = 0;
 			}
@@ -358,7 +358,6 @@ void EditorAsepriteWorkspace::_notification(int p_what) {
 			frame_changed = true;
 		}
 		if(frame_changed){
-			print_line("entrou frame changed");
 			_update_canvas_page(animation_index);
 		}
 	}
@@ -752,28 +751,30 @@ void EditorAsepriteWorkspace::_on_quick_size_selected(int p_index) {
 
 void EditorAsepriteWorkspace::_on_play_animation_pressed(){
 	if(is_animation){
+		is_animation = false;
+		btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
 		return;
 	}
 
 	String fps_text = animation_fps_line_edit->get_text();
 
-	if(!fps_text.is_valid_int()){
-		print_line("STRING NAO VALIDA FPS TEXT");
+	if(!fps_text.is_valid_int() || fps_text.to_int() <= 0){
+		animation_status_label->set_text("Invalid FPS. Enter a positive integer.");
 		return;
 	}
 
-	int animation_fps_int = fps_text.to_int();
-
-	if(!pages.is_empty() && animation_fps_int > 0){
-		frame_duration_ms = 1000.0 / animation_fps_int;
-		is_animation = true;
-		is_drawing = false;
-		btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::STOP));
-		return;
+	if(pages.size() == 1){
+		animation_status_label->set_text("No frames available.");
+        return;
 	}
 
-	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
-	is_animation = false;
+	int fps = fps_text.to_int();
+	frame_duration_ms = 1000.0 / fps;
+	is_animation = true;
+	is_drawing = false;
+	animation_status_label->set_text("");
+	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::STOP));
+
 }
 
 void EditorAsepriteWorkspace::_on_add_page_pressed() {
