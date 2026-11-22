@@ -20,8 +20,6 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 	set_v_size_flags(SIZE_EXPAND_FILL);
 	set_h_size_flags(SIZE_EXPAND_FILL);
 
-	_create_checkerboard_texture();
-
 	// --- Top Toolbar ---
 	toolbar = memnew(HBoxContainer);
 	add_child(toolbar);
@@ -257,31 +255,12 @@ EditorAsepriteWorkspace::EditorAsepriteWorkspace() {
 	btn_clear->connect("pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_clear_pressed));
 
 	// --- Center Canvas Viewport with Checkerboard Background ---
-	ScrollContainer *scroll = memnew(ScrollContainer);
-	scroll->set_h_size_flags(SIZE_EXPAND_FILL);
-	scroll->set_v_size_flags(SIZE_EXPAND_FILL);
-	workspace_body->add_child(scroll);
-
-	canvas_center_container = memnew(CenterContainer);
-	canvas_center_container->set_h_size_flags(SIZE_EXPAND_FILL);
-	canvas_center_container->set_v_size_flags(SIZE_EXPAND_FILL);
-	scroll->add_child(canvas_center_container);
-
-	canvas_viewport_box = memnew(PanelContainer);
-	canvas_center_container->add_child(canvas_viewport_box);
-
-	canvas_bg_texture_rect = memnew(TextureRect);
-	canvas_bg_texture_rect->set_texture(checkerboard_texture);
-	canvas_bg_texture_rect->set_stretch_mode(TextureRect::STRETCH_TILE);
-	canvas_bg_texture_rect->set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
-	canvas_viewport_box->add_child(canvas_bg_texture_rect);
-
-	canvas_texture_rect = memnew(TextureRect);
-	canvas_texture_rect->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
-	canvas_texture_rect->set_stretch_mode(TextureRect::STRETCH_SCALE);
-	canvas_texture_rect->set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
-	canvas_viewport_box->add_child(canvas_texture_rect);
-	canvas_texture_rect->connect("gui_input", callable_mp(this, &EditorAsepriteWorkspace::_gui_input_canvas));
+	canvas = memnew(PmdspriteCanvas);
+	workspace_body->add_child(canvas);
+	canvas->connect("pixel_pressed", callable_mp(this, &EditorAsepriteWorkspace::_on_canvas_pixel_pressed));
+	canvas->connect("pixel_dragged", callable_mp(this, &EditorAsepriteWorkspace::_on_canvas_pixel_dragged));
+	canvas->connect("pixel_hovered", callable_mp(this, &EditorAsepriteWorkspace::_on_canvas_pixel_hovered));
+	canvas->connect("zoom_changed", callable_mp(this, &EditorAsepriteWorkspace::_on_canvas_zoom_changed));
 
 	// --- Right Palette Panel ---
 	palette_panel = memnew(VBoxContainer);
@@ -341,35 +320,12 @@ void EditorAsepriteWorkspace::_bind_methods() {
 void EditorAsepriteWorkspace::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_PROCESS: {
-			if (!is_animation || pages.size() <= 1 || frame_duration_ms <= 0.0) {
-				return;
-			}
-
-			const double delta_ms = MIN(get_process_delta_time() * 1000.0, 250.0);
-			time_accumulator += delta_ms;
-
-			if (time_accumulator >= frame_duration_ms) {
-				const int steps = static_cast<int>(time_accumulator / frame_duration_ms);
-				time_accumulator = Math::fmod(time_accumulator, frame_duration_ms);
-
-				animation_index = (animation_index + steps) % pages.size();
-				_update_canvas_page(animation_index);
+			int index = 0;
+			if (animation.advance(get_process_delta_time(), pages.size(), index)) {
+				_update_canvas_page(index);
 			}
 		} break;
 	}
-}
-
-void EditorAsepriteWorkspace::_create_checkerboard_texture() {
-	Ref<Image> checker_img = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
-	Color col_a = Color(0.18f, 0.18f, 0.18f, 1.0f);
-	Color col_b = Color(0.28f, 0.28f, 0.28f, 1.0f);
-	for (int y = 0; y < 16; ++y) {
-		for (int x = 0; x < 16; ++x) {
-			bool is_a = ((x / 8) + (y / 8)) % 2 == 0;
-			checker_img->set_pixel(x, y, is_a ? col_a : col_b);
-		}
-	}
-	checkerboard_texture = ImageTexture::create_from_image(checker_img);
 }
 
 Ref<Texture2D> EditorAsepriteWorkspace::_load_svg_icon(const char *p_svg) {
@@ -385,15 +341,6 @@ Ref<Texture2D> EditorAsepriteWorkspace::_load_svg_icon(const char *p_svg) {
 	return ImageTexture::create_from_image(image);
 }
 
-void EditorAsepriteWorkspace::_update_canvas_rect_size() {
-	Vector2 sz = Vector2(canvas_width * zoom_level, canvas_height * zoom_level);
-	if (canvas_bg_texture_rect) {
-		canvas_bg_texture_rect->set_custom_minimum_size(sz);
-	}
-	if (canvas_texture_rect) {
-		canvas_texture_rect->set_custom_minimum_size(sz);
-	}
-}
 
 void EditorAsepriteWorkspace::_update_canvas_page(int p_index){
 	current_page_index = p_index;
@@ -401,6 +348,12 @@ void EditorAsepriteWorkspace::_update_canvas_page(int p_index){
 
 	update_canvas_texture();
 	_update_pages_ui();
+}
+
+void EditorAsepriteWorkspace::update_canvas_texture() {
+	if (canvas && canvas_image.is_valid()) {
+		canvas->set_image(canvas_image);
+	}
 }
 
 void EditorAsepriteWorkspace::_setup_palette() {
@@ -436,26 +389,14 @@ void EditorAsepriteWorkspace::initialize_workspace(int p_width, int p_height) {
 	current_page_index = 0;
 	canvas_image = pages[0];
 
-	if (!canvas_texture.is_valid()) {
-		canvas_texture = ImageTexture::create_from_image(canvas_image);
-	} else {
-		canvas_texture->set_image(canvas_image);
-	}
-	if (canvas_texture_rect) {
-		canvas_texture_rect->set_texture(canvas_texture);
+	if (canvas) {
+		canvas->set_image(canvas_image);
 	}
 
-	_update_canvas_rect_size();
 	_update_pages_ui();
 
 	if (canvas_size_label) {
 		canvas_size_label->set_text(vformat("Canvas: %dx%d", canvas_width, canvas_height));
-	}
-}
-
-void EditorAsepriteWorkspace::update_canvas_texture() {
-	if (canvas_image.is_valid() && canvas_texture.is_valid()) {
-		canvas_texture->update(canvas_image);
 	}
 }
 
@@ -469,19 +410,10 @@ void EditorAsepriteWorkspace::_save_undo_state() {
 			state.pages_backup.push_back(pages[i]->duplicate());
 		}
 	}
-	undo_stack.push_back(state);
-	if (undo_stack.size() > 50) {
-		undo_stack.remove_at(0);
-	}
-	redo_stack.clear();
+	history.save(state);
 }
 
 void EditorAsepriteWorkspace::_undo() {
-	if (undo_stack.is_empty()) {
-		if (status_label) status_label->set_text(" Nothing to Undo ");
-		return;
-	}
-
 	WorkspaceUndoState curr;
 	curr.width = canvas_width;
 	curr.height = canvas_height;
@@ -491,10 +423,12 @@ void EditorAsepriteWorkspace::_undo() {
 			curr.pages_backup.push_back(pages[i]->duplicate());
 		}
 	}
-	redo_stack.push_back(curr);
 
-	WorkspaceUndoState prev = undo_stack[undo_stack.size() - 1];
-	undo_stack.remove_at(undo_stack.size() - 1);
+	WorkspaceUndoState prev;
+	if(!history.undo(curr, prev)){
+		if(status_label) status_label->set_text("Nothing to undo");
+		return;
+	}
 
 	canvas_width = prev.width;
 	canvas_height = prev.height;
@@ -509,18 +443,12 @@ void EditorAsepriteWorkspace::_undo() {
 	if (canvas_h_spin) canvas_h_spin->set_value(canvas_height);
 	if (canvas_size_label) canvas_size_label->set_text(vformat("Canvas: %dx%d", canvas_width, canvas_height));
 
-	_update_canvas_rect_size();
-	update_canvas_texture();
+	canvas->set_image(canvas_image);
 	_update_pages_ui();
 	if (status_label) status_label->set_text(" Undo ");
 }
 
 void EditorAsepriteWorkspace::_redo() {
-	if (redo_stack.is_empty()) {
-		if (status_label) status_label->set_text(" Nothing to Redo ");
-		return;
-	}
-
 	WorkspaceUndoState curr;
 	curr.width = canvas_width;
 	curr.height = canvas_height;
@@ -530,10 +458,12 @@ void EditorAsepriteWorkspace::_redo() {
 			curr.pages_backup.push_back(pages[i]->duplicate());
 		}
 	}
-	undo_stack.push_back(curr);
 
-	WorkspaceUndoState next = redo_stack[redo_stack.size() - 1];
-	redo_stack.remove_at(redo_stack.size() - 1);
+	WorkspaceUndoState next;
+	if (!history.redo(curr, next)){
+		if (status_label) status_label->set_text("Nothing to redo");
+		return;
+	}
 
 	canvas_width = next.width;
 	canvas_height = next.height;
@@ -547,9 +477,8 @@ void EditorAsepriteWorkspace::_redo() {
 	if (canvas_w_spin) canvas_w_spin->set_value(canvas_width);
 	if (canvas_h_spin) canvas_h_spin->set_value(canvas_height);
 	if (canvas_size_label) canvas_size_label->set_text(vformat("Canvas: %dx%d", canvas_width, canvas_height));
-
-	_update_canvas_rect_size();
-	update_canvas_texture();
+	
+	canvas->set_image(canvas_image);
 	_update_pages_ui();
 	if (status_label) status_label->set_text(" Redo ");
 }
@@ -583,83 +512,42 @@ void EditorAsepriteWorkspace::unhandled_key_input(const Ref<InputEvent> &p_event
 	}
 }
 
-void _gui_input(const Ref<InputEvent> &p_event){
-
+void EditorAsepriteWorkspace::_on_canvas_pixel_pressed(const Vector2i &p_pos) {
+	if (animation.is_playing()) return; // era: if (is_animation == true) return;
+	_save_undo_state();
+	_apply_tool_at(p_pos.x, p_pos.y);
+	canvas->update_canvas_texture();
 }
-void EditorAsepriteWorkspace::_gui_input_canvas(const Ref<InputEvent> &p_event) {
-	Ref<InputEventMouseButton> mb = p_event;
-	Ref<InputEventMouseMotion> mm = p_event;
 
-	if (mb.is_valid()){
-		if(mb->get_button_index() == MouseButton::LEFT){
-			if(is_animation == true) return;
-			if (mb->is_pressed()) {
-				_save_undo_state();
-				is_drawing = true;
-				Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
-				int px = Math::floor(local_pos.x / zoom_level);
-				int py = Math::floor(local_pos.y / zoom_level);
-				px = CLAMP(px, 0, canvas_width - 1);
-				py = CLAMP(py, 0, canvas_height - 1);
+void EditorAsepriteWorkspace::_on_canvas_pixel_dragged(const Vector2i &p_from, const Vector2i &p_to) {
+	if (animation.is_playing()) return;
+	_draw_line_brush(p_from.x, p_from.y, p_to.x, p_to.y, current_color);
+	canvas->update_canvas_texture();
+}
 
-				_apply_tool_at(px, py);
-				last_mouse_px = Vector2i(px, py);
-				update_canvas_texture();
-			} else {
-				is_drawing = false;
-				last_mouse_px = Vector2i(-1, -1);
-			}
-			return;
-		}
+void EditorAsepriteWorkspace::_on_canvas_pixel_hovered(const Vector2i &p_pos) {
+	cursor_pos_label->set_text(vformat("Cursor: (%d, %d)", p_pos.x, p_pos.y));
+}
 
-		if(mb->is_pressed()){
-			if (mb->get_button_index() == MouseButton::WHEEL_UP) {
-                _on_zoom_in();
-            } else if (mb->get_button_index() == MouseButton::WHEEL_DOWN) {
-                _on_zoom_out();
-            }
-		}
-
-		return;
-	}
-
-	if (mm.is_valid()) {
-		Vector2 local_pos = canvas_texture_rect->get_local_mouse_position();
-		int px = Math::floor(local_pos.x / zoom_level);
-		int py = Math::floor(local_pos.y / zoom_level);
-
-		if (px >= 0 && px < canvas_width && py >= 0 && py < canvas_height) {
-			cursor_pos_label->set_text(vformat("Cursor: (%d, %d)", px, py));
-		}
-
-		if (is_drawing && mm->get_button_mask().has_flag(MouseButtonMask::LEFT)) {
-			px = CLAMP(px, 0, canvas_width - 1);
-			py = CLAMP(py, 0, canvas_height - 1);
-
-			if (last_mouse_px.x >= 0 && last_mouse_px.y >= 0) {
-				_draw_line_brush(last_mouse_px.x, last_mouse_px.y, px, py, current_color);
-			} else {
-				_apply_tool_at(px, py);
-			}
-			last_mouse_px = Vector2i(px, py);
-			update_canvas_texture();
-		}
-	}
+void EditorAsepriteWorkspace::_on_canvas_zoom_changed(float p_zoom) {
+	zoom_label->set_text(vformat(" %.0fx ", p_zoom));
 }
 
 void EditorAsepriteWorkspace::_apply_tool_at(int p_x, int p_y) {
 	if (p_x < 0 || p_x >= canvas_width || p_y < 0 || p_y >= canvas_height) return;
 
+	int size = (int)brush_size_spin->get_value();
+
 	if (current_tool == TOOL_PENCIL) {
-		_draw_brush_at(p_x, p_y, current_color);
+		AsepriteTools::draw_brush_at(canvas_image, p_x, p_y, current_color, size);
 	} else if (current_tool == TOOL_ERASER) {
-		_draw_brush_at(p_x, p_y, Color(0, 0, 0, 0));
+		AsepriteTools::draw_brush_at(canvas_image, p_x, p_y, Color(0, 0, 0, 0), size);
 	} else if (current_tool == TOOL_PICKER) {
 		current_color = canvas_image->get_pixel(p_x, p_y);
 		color_picker_btn->set_pick_color(current_color);
 	} else if (current_tool == TOOL_FILL) {
 		Color target = canvas_image->get_pixel(p_x, p_y);
-		_flood_fill(p_x, p_y, target, current_color);
+		AsepriteTools::flood_fill(canvas_image, p_x, p_y, target, current_color);
 	}
 }
 
@@ -686,34 +574,6 @@ void EditorAsepriteWorkspace::_draw_line_brush(int p_x0, int p_y0, int p_x1, int
 			y += sy;
 		}
 	}
-}
-
-void EditorAsepriteWorkspace::_draw_brush_at(int p_x, int p_y, Color p_color) {
-	if (!canvas_image.is_valid()) return;
-
-	int size = (int)brush_size_spin->get_value();
-	for (int dx = 0; dx < size; ++dx) {
-		for (int dy = 0; dy < size; ++dy) {
-			int target_x = p_x + dx;
-			int target_y = p_y + dy;
-			if (target_x >= 0 && target_x < canvas_width && target_y >= 0 && target_y < canvas_height) {
-				canvas_image->set_pixel(target_x, target_y, p_color);
-			}
-		}
-	}
-}
-
-void EditorAsepriteWorkspace::_flood_fill(int p_x, int p_y, Color p_target, Color p_replacement) {
-	if (p_target == p_replacement) return;
-	if (p_x < 0 || p_x >= canvas_width || p_y < 0 || p_y >= canvas_height) return;
-	if (canvas_image->get_pixel(p_x, p_y) != p_target) return;
-
-	canvas_image->set_pixel(p_x, p_y, p_replacement);
-
-	_flood_fill(p_x + 1, p_y, p_target, p_replacement);
-	_flood_fill(p_x - 1, p_y, p_target, p_replacement);
-	_flood_fill(p_x, p_y + 1, p_target, p_replacement);
-	_flood_fill(p_x, p_y - 1, p_target, p_replacement);
 }
 
 void EditorAsepriteWorkspace::_update_tool_buttons() {
@@ -746,31 +606,28 @@ void EditorAsepriteWorkspace::_on_quick_size_selected(int p_index) {
 }
 
 void EditorAsepriteWorkspace::_on_play_animation_pressed(){
-	if(is_animation){
-		is_animation = false;
+	if (animation.is_playing()) {
+		animation.stop();
 		btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::PLAY));
 		return;
 	}
 
 	String fps_text = animation_fps_line_edit->get_text();
 
-	if(!fps_text.is_valid_int() || fps_text.to_int() <= 0){
+	if (!fps_text.is_valid_int() || fps_text.to_int() <= 0) {
 		animation_status_label->set_text("Invalid FPS. Enter a positive integer.");
 		return;
 	}
 
-	if(pages.size() == 1){
+	if (pages.size() == 1) {
 		animation_status_label->set_text("No frames available.");
-        return;
+		return;
 	}
 
 	int fps = fps_text.to_int();
-	frame_duration_ms = 1000.0 / fps;
-	is_animation = true;
-	is_drawing = false;
+	animation.start(fps);
 	animation_status_label->set_text("");
 	btn_play_animation->set_icon(_load_svg_icon(AsepriteIcons::STOP));
-
 }
 
 void EditorAsepriteWorkspace::_on_add_page_pressed() {
@@ -783,7 +640,7 @@ void EditorAsepriteWorkspace::_on_add_page_pressed() {
 	current_page_index = pages.size() - 1;
 	canvas_image = pages[current_page_index];
 
-	update_canvas_texture();
+	canvas->set_image(canvas_image);
 	_update_pages_ui();
 	if (status_label) status_label->set_text(vformat(" Created Page %d ", current_page_index + 1));
 }
@@ -798,7 +655,7 @@ void EditorAsepriteWorkspace::_on_duplicate_page_pressed() {
 	current_page_index = pages.size() - 1;
 	canvas_image = pages[current_page_index];
 
-	update_canvas_texture();
+	canvas->set_image(canvas_image);
 	_update_pages_ui();
 	if (status_label) status_label->set_text(vformat(" Duplicated Page %d ", current_page_index + 1));
 }
@@ -816,7 +673,7 @@ void EditorAsepriteWorkspace::_on_delete_page_pressed() {
 	}
 	canvas_image = pages[current_page_index];
 
-	update_canvas_texture();
+	canvas->set_image(canvas_image);
 	_update_pages_ui();
 	if (status_label) status_label->set_text(vformat(" Page deleted (Active: %d) ", current_page_index + 1));
 }
@@ -825,7 +682,7 @@ void EditorAsepriteWorkspace::_select_page(int p_index) {
 	if (p_index >= 0 && p_index < pages.size()) {
 		current_page_index = p_index;
 		canvas_image = pages[current_page_index];
-		update_canvas_texture();
+		canvas->set_image(canvas_image);
 		_update_pages_ui();
 	}
 }
@@ -903,8 +760,7 @@ void EditorAsepriteWorkspace::_resize_canvas(int p_new_width, int p_new_height, 
 	if (canvas_h_spin) canvas_h_spin->set_value(canvas_height);
 	if (canvas_size_label) canvas_size_label->set_text(vformat("Canvas: %dx%d", canvas_width, canvas_height));
 
-	_update_canvas_rect_size();
-	update_canvas_texture();
+	canvas->set_image(canvas_image);
 	if (status_label) status_label->set_text(vformat(" Canvas Resized (%dx%d, Ctrl+Z to Undo) ", canvas_width, canvas_height));
 }
 
@@ -925,33 +781,11 @@ void EditorAsepriteWorkspace::_on_new_canvas_pressed() {
 void EditorAsepriteWorkspace::_on_export_pressed() {
 	if (!canvas_image.is_valid()) return;
 
-	String sname = sprite_name_input->get_text().strip_edges();
-	if (sname.is_empty()) sname = "sprite_01";
-	if (sname.ends_with(".png")) sname = sname.left(sname.length() - 4);
-
-	String dir_path = export_dir_input ? export_dir_input->get_text().strip_edges() : "res://assets/sprites/";
-	if (!dir_path.ends_with("/")) dir_path += "/";
-
-	String base_dir = dir_path.replace("res://", "");
-	Ref<DirAccess> da = DirAccess::open("res://");
-	if (da.is_valid()) {
-		da->make_dir_recursive(base_dir);
-	}
-
-	String main_export_path = dir_path + sname + ".png";
-	Error err = canvas_image->save_png(main_export_path);
-
-	if (pages.size() > 1) {
-		for (int i = 0; i < pages.size(); ++i) {
-			if (pages[i].is_valid()) {
-				String page_path = dir_path + sname + vformat("_page_%d.png", i + 1);
-				pages[i]->save_png(page_path);
-			}
-		}
-	}
+	String dir = export_dir_input ? export_dir_input->get_text() : "res://assets/sprites/";
+	Error err = AsepriteExporter::export_pages(pages, current_page_index, dir, sprite_name_input->get_text());
 
 	if (err == OK) {
-		if (status_label) status_label->set_text(vformat(" Exported (%d pages) to %s ", pages.size(), main_export_path));
+		if (status_label) status_label->set_text(vformat(" Exported (%d pages) to %s ", pages.size()));
 #ifdef TOOLS_ENABLED
 		if (EditorFileSystem::get_singleton()) {
 			EditorFileSystem::get_singleton()->scan();
@@ -966,7 +800,7 @@ void EditorAsepriteWorkspace::_on_clear_pressed() {
 	if (canvas_image.is_valid()) {
 		_save_undo_state();
 		canvas_image->fill(Color(0, 0, 0, 0));
-		update_canvas_texture();
+		canvas->update_canvas_texture();
 		if (status_label) status_label->set_text(" Canvas Cleared ");
 	}
 }
@@ -981,25 +815,15 @@ void EditorAsepriteWorkspace::_on_palette_color_clicked(const Color &p_color) {
 }
 
 void EditorAsepriteWorkspace::_on_zoom_in() {
-	if (zoom_level < 32.0f) {
-		zoom_level *= 2.0f;
-		zoom_label->set_text(vformat(" %.0fx ", zoom_level));
-		_update_canvas_rect_size();
-	}
+	canvas->zoom_in();
 }
 
 void EditorAsepriteWorkspace::_on_zoom_out() {
-	if (zoom_level > 1.0f) {
-		zoom_level /= 2.0f;
-		zoom_label->set_text(vformat(" %.0fx ", zoom_level));
-		_update_canvas_rect_size();
-	}
+	canvas->zoom_out();
 }
 
 void EditorAsepriteWorkspace::_on_zoom_reset() {
-	zoom_level = 8.0f;
-	zoom_label->set_text(" 8x ");
-	_update_canvas_rect_size();
+	canvas->zoom_reset();
 }
 
 #ifdef TOOLS_ENABLED

@@ -3,18 +3,21 @@
 
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
-#include "scene/gui/center_container.h"
 #include "scene/gui/color_picker.h"
 #include "scene/gui/file_dialog.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/option_button.h"
-#include "scene/gui/panel_container.h"
-#include "scene/gui/scroll_container.h"
 #include "scene/gui/spin_box.h"
-#include "scene/gui/texture_rect.h"
 #include "scene/resources/image_texture.h"
+
+#include "workspace_undo_state.h"
+#include "pmdsprite_history.h"
+#include "pmdsprite_animation.h"
+#include "pmdsprite_tools.h"
+#include "pmdsprite_exporter.h"
+#include "pmdsprite_canvas.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/gui/editor_file_dialog.h"
@@ -23,16 +26,19 @@
 class EditorAsepriteWorkspace : public VBoxContainer {
 	GDCLASS(EditorAsepriteWorkspace, VBoxContainer);
 
+	enum ToolType {
+		TOOL_PENCIL,
+		TOOL_ERASER,
+		TOOL_PICKER,
+		TOOL_FILL
+	};
+
 private:
 	HBoxContainer *toolbar = nullptr;
 	HBoxContainer *pages_bar = nullptr;
 	HBoxContainer *workspace_body = nullptr;
 	VBoxContainer *tools_panel = nullptr;
-	PanelContainer *canvas_container = nullptr;
-	CenterContainer *canvas_center_container = nullptr;
-	PanelContainer *canvas_viewport_box = nullptr;
-	TextureRect *canvas_bg_texture_rect = nullptr;
-	TextureRect *canvas_texture_rect = nullptr;
+	PmdspriteCanvas *canvas = nullptr;
 	VBoxContainer *palette_panel = nullptr;
 	HBoxContainer *status_bar = nullptr;
 
@@ -58,21 +64,10 @@ private:
 	Label *animation_status_label = nullptr;
 	LineEdit *animation_fps_line_edit = nullptr;
 
-	Ref<Image> canvas_image;
-	Ref<ImageTexture> canvas_texture;
-	Ref<ImageTexture> checkerboard_texture;
-
 	Color current_color = Color(1, 1, 1, 1);
-	int canvas_width = 64;
-	int canvas_height = 64;
-	float zoom_level = 8.0f;
 
-	bool is_drawing = false;
-	bool is_animation = false;
-	int animation_index = 0;
-	float frame_duration_ms = 0.0;
-	float time_accumulator = 0.0;
-	Vector2i last_mouse_px = Vector2i(-1, -1);
+	PmdspriteHistory history;
+	PmdspriteAnimation animation;
 
 	Button *btn_pencil = nullptr;
 	Button *btn_eraser = nullptr;
@@ -94,34 +89,19 @@ private:
 	Label *canvas_size_label = nullptr;
 	Label *zoom_label = nullptr;
 
+	Ref<Image> canvas_image;
+	int canvas_width = 64;
+	int canvas_height = 64;
+	ToolType current_tool = TOOL_PENCIL;
+
 #ifdef TOOLS_ENABLED
 	EditorFileDialog *export_file_dialog = nullptr;
 #endif
-
-	struct WorkspaceUndoState {
-		int width = 64;
-		int height = 64;
-		int page_index = 0;
-		Vector<Ref<Image>> pages_backup;
-	};
-
-	Vector<WorkspaceUndoState> undo_stack;
-	Vector<WorkspaceUndoState> redo_stack;
-
-	enum ToolType {
-		TOOL_PENCIL,
-		TOOL_ERASER,
-		TOOL_PICKER,
-		TOOL_FILL
-	};
-
-	ToolType current_tool = TOOL_PENCIL;
 
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
 	virtual void unhandled_key_input(const Ref<InputEvent> &p_event) override;
-	void _gui_input_canvas(const Ref<InputEvent> &p_event);
 
 	void _on_tool_selected(int p_tool_id);
 	void _on_preset_selected(int p_index);
@@ -152,14 +132,16 @@ protected:
 	void _on_zoom_reset();
 
 	void _apply_tool_at(int p_x, int p_y);
-	void _draw_brush_at(int p_x, int p_y, Color p_color);
 	void _draw_line_brush(int p_x0, int p_y0, int p_x1, int p_y1, Color p_color);
-	void _flood_fill(int p_x, int p_y, Color p_target, Color p_replacement);
 	void _update_tool_buttons();
 	void _setup_palette();
-	void _create_checkerboard_texture();
-	void _update_canvas_rect_size();
 	void _resize_canvas(int p_new_width, int p_new_height, bool p_scale);
+
+
+	void _on_canvas_pixel_pressed(const Vector2i &p_pos);
+	void _on_canvas_pixel_dragged(const Vector2i &p_from, const Vector2i &p_to);
+	void _on_canvas_pixel_hovered(const Vector2i &p_pos);
+	void _on_canvas_zoom_changed(float p_zoom);
 
 	Ref<Texture2D> _load_svg_icon(const char *p_svg);
 
