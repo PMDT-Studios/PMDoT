@@ -90,6 +90,11 @@ void WebViewLinux::post_message(const String &p_json){
 }
 // ----------------------
 
+void WebViewLinux::shutdown(){
+    browser->GetHost()->CloseBrowser(true);
+    browser = nullptr;
+}
+
 WebViewBackend *WebViewBackend::create() {
 	return memnew(WebViewLinux);
 }
