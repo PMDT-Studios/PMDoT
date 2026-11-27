@@ -126,4 +126,14 @@ int main(int argc, char *argv[]) {
 	free(cwd);
 
 	return os.get_exit_code();
+
+	// MATHEUS VOU POR EM PORTUGUES QUE ESSA É PARA VOCÊ
+	// O IDEAL ERA DAR CEF.SHUTDOWN() AUQI, MAS ELE PODE TER ALGO A MAIS
+	// PARA PODER COMPUTAR NO CefDoMessageLoopWork()
+	// A IA disse que a solução era criar um contador global de quantidade de 
+	// Navegação pelo que entendi aberta e uma funcao que retorna essa quantidade
+	// E se a quantidade fosse mt grande a gente rodava o CefDoMessageLoopWork enquanto
+	// Fosse maior que 0 e depois de rodar dava um Usleep
+	// Mas rapaz, isso ta muito estranho.
+	
 }

@@ -4,21 +4,23 @@
 #ifdef LINUXBSD_ENABLED
 
 #include "webview_backend.h"
+#include <cef_app.h>
+#include <cef_browser.h>
+#include <cef_client.h>
+#include <cef_render_handler.h>
+#include <cef_life_span_handler.h>
 
 class MyCefClient : public CefClient, public CefRenderHandler, public CefLifeSpanHandler {
 private:
     CefRefPtr<CefBrowser> browser_;
+    CefRect view_rect_;
 
 public:
     CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
 
-    CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override {
-        return this;
-    }
+    CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 
-    void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
-        browser_ = browser;
-    }
+    void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
 
     bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
 
@@ -31,15 +33,13 @@ public:
         int height
     ) override;
 
-    bool is_browser_saved() const {
-        return browser_ != nullptr;
-    }
+    bool is_browser_saved() const;
 
     void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
-    CefRefPtr<CefBrowser> get_browser() const {
-        return browser_;
-    }
+    CefRefPtr<CefBrowser> get_browser() const;
+
+    void set_view_rect(const CefRect &rect);
 
     IMPLEMENT_REFCOUNTING(MyCefClient);
 };
