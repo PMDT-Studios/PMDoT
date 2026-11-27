@@ -5,6 +5,10 @@ Import("env")
 env_vscode = env.Clone()
 env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/editor"])
 
+env_vscode.Prepend(CPPPATH=["#modules/pmdot_vscode/editor/platform"])
+
+if env["platform"] == "linuxbsd": env_vscode.Append(CPPPATH=["#modules/pmdot_vscode/thirdparty/cef/include"])
+
 sources = [
     "register_types.cpp",
 ]

@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include <cef_app.h>
+#include <webview_linux.h>
 
 #if defined(SANITIZERS_ENABLED)
 #include <sys/resource.h>
@@ -124,16 +125,13 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	free(cwd);
+	
+	while(MyCefClient::active_browser >= 0){
+		CefDoMessageLoopWork();
+		usleep(10000); // 10ms to not stop CPU in closure
+	}
+
+	CefShutdown();
 
 	return os.get_exit_code();
-
-	// MATHEUS VOU POR EM PORTUGUES QUE ESSA É PARA VOCÊ
-	// O IDEAL ERA DAR CEF.SHUTDOWN() AUQI, MAS ELE PODE TER ALGO A MAIS
-	// PARA PODER COMPUTAR NO CefDoMessageLoopWork()
-	// A IA disse que a solução era criar um contador global de quantidade de 
-	// Navegação pelo que entendi aberta e uma funcao que retorna essa quantidade
-	// E se a quantidade fosse mt grande a gente rodava o CefDoMessageLoopWork enquanto
-	// Fosse maior que 0 e depois de rodar dava um Usleep
-	// Mas rapaz, isso ta muito estranho.
-	
 }

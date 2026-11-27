@@ -100,6 +100,7 @@ WebViewBackend *WebViewBackend::create() {
 
 void MyCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
     if (browser_ && browser_->IsSame(browser)) {
+		MyCefClient::active_browser--;
         browser_ = nullptr;
     }
 }
@@ -122,6 +123,7 @@ CefRefPtr<CefBrowser> MyCefClient::get_browser() const {
 }
 
 void MyCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser){
+	MyCefClient::active_browser++;
     browser_ = browser;
 }
 

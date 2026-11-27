@@ -14,6 +14,12 @@ class MyCefClient : public CefClient, public CefRenderHandler, public CefLifeSpa
 private:
     CefRefPtr<CefBrowser> browser_;
     CefRect view_rect_;
+    //We need browser count to count how many browser we have when close godot
+    //In CEF doc in life cicle we have to run CefRunMessageloop
+    //But we dont use that, so when we close godot
+    //We need to close the browsers that are still open to not crash
+    //This we do with while in main();
+    static int active_browser = 0;
 
 public:
     CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
