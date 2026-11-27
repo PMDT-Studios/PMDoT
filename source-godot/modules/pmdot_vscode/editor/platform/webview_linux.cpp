@@ -1,53 +1,58 @@
-#ifndef WINDOWS_ENABLED
+#ifdef LINUXBSD_ENABLED
 
-#include "webview_backend.h"
+#include <cef_app.h>
+#include <cef_browser.h>
+#include <cef_client.h>
+#include <cef_render_handler.h>
+#include <cef_life_span_handler.h>
 
-class WebViewPosix : public WebViewBackend {
-private:
-	bool ready = false;
-	bool visible = false;
-	Rect2i current_bounds;
-	String pending_url;
-	MessageCallback message_callback;
-
-public:
-	virtual bool initialize(int64_t p_native_window_handle, const Rect2i &p_bounds) override {
-		current_bounds = p_bounds;
-		ready = (p_native_window_handle != 0);
-		return ready;
+static String _resolve_monaco_directory() {
+	String exe_dir = OS::get_singleton()->get_executable_path().get_base_dir();
+	String packaged = exe_dir.path_join("pmdot_vscode_ide");
+	if (DirAccess::exists(packaged)) {
+		return packaged;
 	}
-
-	virtual void shutdown() override {
-		ready = false;
+	String dev_path = exe_dir.get_base_dir().path_join("modules/pmdot_vscode/thirdparty/monaco-editor");
+	if (DirAccess::exists(dev_path)) {
+		return dev_path;
 	}
-
-	virtual void set_bounds(const Rect2i &p_bounds) override {
-		current_bounds = p_bounds;
+	String cwd_path = OS::get_singleton()->get_resource_dir().path_join("../source-godot/modules/pmdot_vscode/thirdparty/monaco-editor");
+	if (DirAccess::exists(cwd_path)) {
+		return cwd_path;
 	}
-
-	virtual void set_visible(bool p_visible) override {
-		visible = p_visible;
-	}
-
-	virtual void navigate(const String &p_url) override {
-		pending_url = p_url;
-	}
-
-	virtual void execute_script(const String &p_js) override {}
-
-	virtual void post_message(const String &p_json) override {}
-
-	virtual void set_message_callback(MessageCallback p_callback) override {
-		message_callback = p_callback;
-	}
-
-	virtual bool is_ready() const override {
-		return ready;
-	}
-};
-
-WebViewBackend *WebViewBackend::create() {
-	return memnew(WebViewPosix);
+	return dev_path;
 }
 
-#endif // !WINDOWS_ENABLED
+bool WebViewLinux::initialize(int64_t p_native_window_handle, const Rect2i &p_bounds){
+	if(!CefBrowserHost::CreateBrowser(window_info, client, "https://www.google.com", browser_settings, nullptr, nullptr)){
+		//Google to test, after we'll put out vscode .html
+		return false;
+	}
+
+	return true;
+}
+
+void WebViewLinux::_notification(int p_what){
+	switch (p_what)
+	{
+	case NOTIFICATION_PROCESS:
+		CefDoMessageLoopWork();
+		if(!ready && client->is_browser_saved()){
+			browser = client->get_browser();
+			ready = true;
+		}
+		break;
+	
+	default:
+		break;
+	}
+}
+
+
+void MyCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+    if (browser_ && browser_->IsSame(browser)) {
+        browser_ = nullptr;
+    }
+}
+
+#endif // LINUXBSD_ENABLED
