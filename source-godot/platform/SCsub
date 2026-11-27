@@ -63,3 +63,4 @@ for platform in env.platform_apis:
 
 lib = env.add_library("platform", env.platform_sources)
 env.Prepend(LIBS=[lib])
+

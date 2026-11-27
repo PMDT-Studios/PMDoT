@@ -37,6 +37,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <cef_app.h>
+#include <webview_linux.h>
+
 #if defined(SANITIZERS_ENABLED)
 #include <sys/resource.h>
 #endif
@@ -67,6 +70,34 @@ int main(int argc, char *argv[]) {
 	// We must override main when testing is enabled
 	TEST_MAIN_OVERRIDE
 
+
+	// CEF: process initialization
+    CefMainArgs main_args(argc, argv);
+    CefRefPtr<CefApp> cef_app;
+
+    int exit_code = CefExecuteProcess(
+        main_args,
+        cef_app,
+        nullptr
+    );
+
+    if (exit_code >= 0) {
+        return exit_code;
+    }
+
+    // CEF: browser process initialization
+    CefSettings cef_settings;
+    cef_settings.multi_threaded_message_loop = false;
+
+    if (!CefInitialize(
+            main_args,
+            cef_settings,
+            cef_app,
+            nullptr
+    )) {
+        return EXIT_FAILURE;
+    }
+
 	char *cwd = (char *)malloc(PATH_MAX);
 	ERR_FAIL_NULL_V(cwd, ERR_OUT_OF_MEMORY);
 	char *ret = getcwd(cwd, PATH_MAX);
@@ -94,6 +125,13 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	free(cwd);
+	
+	while(MyCefClient::active_browser >= 0){
+		CefDoMessageLoopWork();
+		usleep(10000); // 10ms to not stop CPU in closure
+	}
+
+	CefShutdown();
 
 	return os.get_exit_code();
 }

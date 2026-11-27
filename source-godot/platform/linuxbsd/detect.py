@@ -406,6 +406,14 @@ def configure(env: "SConsEnvironment"):
         env.ParseConfig("pkg-config zlib --cflags --libs")
 
     env.Prepend(CPPPATH=["#platform/linuxbsd"])
+
+        # PMDoT VSCode / CEF
+    env.Append(CPPPATH=[
+        "#modules/pmdot_vscode/thirdparty/cef",
+        "#modules/pmdot_vscode/thirdparty/cef/include",
+        "#modules/pmdot_vscode/editor/platform",
+    ])
+    
     if env["use_sowrap"]:
         env.Prepend(CPPPATH=["#thirdparty/linuxbsd_headers"])
 
