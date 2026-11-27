@@ -24,10 +24,21 @@ static String _resolve_monaco_directory() {
 }
 
 bool WebViewLinux::initialize(int64_t p_native_window_handle, const Rect2i &p_bounds){
+    set_position(Vector2(p_bounds.position));
+    set_size(Vector2(p_bounds.size));
+	
+	current_bounds.Set(
+		p_bounds.position.x,
+		p_bounds.position.y,
+		p_bounds.size.x,
+		p_bounds.size.y
+	);
+
 	if(!CefBrowserHost::CreateBrowser(window_info, client, "https://www.google.com", browser_settings, nullptr, nullptr)){
 		//Google to test, after we'll put out vscode .html
 		return false;
 	}
+
 
 	return true;
 }
