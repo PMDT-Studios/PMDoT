@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "include/cef_app.h"
+#include <cef_app.h>
 
 #if defined(SANITIZERS_ENABLED)
 #include <sys/resource.h>
